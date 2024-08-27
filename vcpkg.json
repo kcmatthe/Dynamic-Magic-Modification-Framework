@@ -1,0 +1,28 @@
+{
+  "name": "template",
+  "version-string": "1.0.0",
+  "description": "",
+  "homepage": "",
+  "license": "GPL-3.0-or-later",
+  "dependencies": [
+    "fmt",
+    "directxtk",
+    "rapidcsv",
+    "spdlog",
+    "xbyak",
+    "catch2",
+    "boost-stl-interfaces",
+    "robin-hood-hashing",
+    "rsm-binary-io",
+    "simpleini",
+    "rapidjson",
+    "clib-util"
+  ],
+  "builtin-baseline": "417119555f155f6044dec7a379cd25466e339873",
+  "overrides": [
+    {
+      "name": "fmt",
+      "version": "8.0.1"
+    }
+  ]
+}
