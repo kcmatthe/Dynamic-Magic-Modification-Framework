@@ -96,7 +96,6 @@ namespace Hooks
 						}
 						casts.erase(it);
 						logger::debug("cast instance erased");
-
 						AddChargeOverridesOnCast(caster);
 						AddChargeMultipliersOnCast(caster);
 						AddChargeModifiersOnCast(caster);
@@ -108,6 +107,7 @@ namespace Hooks
 						AddMagMultipliersOnCast(caster);
 						AddMagModifiersOnCast(caster);
 						AddReplacementSpellOnCast(caster);
+						
 					}
 				}
 			}
@@ -120,10 +120,11 @@ namespace Hooks
 	{
 		logger::trace("StartCharge");
 
+		
 
 		auto magic = caster->currentSpell;
 		float origin = magic->GetChargeTime();
-		//float chargeTime = CalculateNewChargeTime(caster, origin, true);
+
 		CalculateNewChargeTime(caster, origin, true);
 		CalculateNewCost(caster, true);
 		ReplaceSpell(caster);  //Called here so that modifymagnitude won't overwrite replaced spell
@@ -132,11 +133,8 @@ namespace Hooks
 		auto currentCast = *it;
 		auto chargeTime = currentCast.charge->updatedTime;
 		auto actor = caster->GetCasterAsActor();
-		//auto cost = CalculateNewCost(caster, true);
 		auto cost = currentCast.cost->updatedCost;
 		caster->currentSpellCost = cost;
-		
-		//Determine replacement spell / CaclualteMag
 
 		logger::info("Starting charge for {}'s {} spell. Charge time is {} seconds, cost is {}\n", magic->GetFullName(), actor->GetDisplayFullName(), chargeTime, cost);
 
@@ -441,11 +439,11 @@ namespace Hooks
 					default:
 						break;
 					}
-
+					logger::info("State: {}, av: {}, cost: {}, value: {}", caster->state.get(), ResourceAcV, MagickaCost);
 					if (bUsesResource &&
 						MagickaCost > 0.0f) {
 						auto Magicka = (useBaseValueForCost) ? AlternateAV::GetBaseActorValue(caster->actor, ResourceAcV) : AlternateAV::GetActorValue(caster->actor, ResourceAcV);
-
+						logger::info("State: {}, av: {}, cost: {}, value: {}", caster->state.get(), ResourceAcV, MagickaCost, Magicka);
 						if (ResourceAcV == RE::ActorValue::kHealth) { 
 							bHasResource = Magicka >= MagickaCost;//This ensures that player does not kill themselves when casting concentration spells
 						} else {

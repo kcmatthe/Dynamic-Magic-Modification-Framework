@@ -13,8 +13,6 @@
 
 namespace config
 {
-	
-
 	struct Override
 	{
 	public:
@@ -41,11 +39,6 @@ namespace config
 			condOp = "and";
 		}
 	};
-
-	
-	
-	
-	
 
 	struct Function
 	{

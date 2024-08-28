@@ -44,6 +44,7 @@ namespace
 		if (event->type == SKSE::MessagingInterface::kPostLoad) {
 			logger::info("Post Load");
 			//Hooks::EffectItemReplaceTagsFunctor::Register();
+			Hooks::CasterHook::Install();
 		}
 		// The user has started a new game by selecting New Game at the main menu.
 		if (event->type == SKSE::MessagingInterface::kNewGame) {
@@ -135,7 +136,7 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse)
 	SKSE::GetMessagingInterface()->RegisterListener(OnEvent);
 
 	Hooks::GetChargeTimeVHook::Install();
-	Hooks::CasterHook::Install();
+	
 	
 	InitializePapyrus();
 	InitializeSerialization();
