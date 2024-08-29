@@ -4,20 +4,20 @@
 
 namespace Conditions
 {
-	std::variant<std::monostate, RE::ActorValue, RE::MagicSystem::SpellType, RE::MagicSystem::CastingType, RE::MagicItem*, RE::Actor*, RE::BGSPerk*, RE::MagicSystem::CastingSource, std::string, float> AssignVariable(std::string variable, std::variant<std::string, float> value)
+	std::variant<std::monostate, RE::ActorValue, RE::EffectSetting*, RE::MagicSystem::SpellType, RE::MagicSystem::CastingType, RE::MagicItem*, RE::Actor*, RE::BGSPerk*, RE::MagicSystem::CastingSource, std::string, float, bool> AssignVariable(std::string variable, std::variant<std::string, float, bool> value)
 	{
 		//logger::info("Assigning variable");
+
 		if (auto svalue = std::get_if<std::string>(&value)) {
 			if (variable == "form" || variable == "Form") {
 				auto form = Utility::TES::GetFormFromEditorID<RE::MagicItem>(svalue->c_str());
 
 				if (form) {
-					//	logger::info("Assigned to {}", form->fullName);
 					return form;
 				} else {
 					return 0.0f;
 				}
-
+			
 			}  else if (variable == "hand" || variable == "Hand") {
 				if (*svalue == "left" || *svalue == "Left") {
 					return RE::MagicSystem::CastingSource::kLeftHand;
@@ -42,7 +42,6 @@ namespace Conditions
 					auto actor = Utility::TES::GetFormFromEditorID<RE::Actor>(svalue->c_str());
 
 					if (actor) {
-						//	logger::info("Assigned to {}", actor->GetDisplayFullName());
 						return actor;
 					} else {
 						return 0.0f;
@@ -57,19 +56,14 @@ namespace Conditions
 				}
 			} else if (variable == "school" || variable == "School") {
 				if (*svalue == "Alteration" || *svalue == "alteration") {
-					//logger::info("Assigned to alteration");
 					return RE::ActorValue::kAlteration;
 				} else if (*svalue == "Conjuration" || *svalue == "conjuration") {
-					//logger::info("Assigned to conjuration");
 					return RE::ActorValue::kConjuration;
 				} else if (*svalue == "Destruction" || *svalue == "destruction") {
-					//logger::info("Assigned to destruction");
 					return RE::ActorValue::kDestruction;
 				} else if (*svalue == "Illusion" || *svalue == "illusion") {
-					//logger::info("Assigned to illusion");
 					return RE::ActorValue::kIllusion;
 				} else if (*svalue == "Restoration" || *svalue == "restoration") {
-					//logger::info("Assigned to restoration");
 					return RE::ActorValue::kRestoration;
 				}
 			} else if (variable == "magicType" || variable == "MagicType") {
@@ -80,9 +74,18 @@ namespace Conditions
 				} else if (*svalue == "Staff" || *svalue == "staff") {
 					return RE::MagicSystem::SpellType::kStaffEnchantment;
 				}
+			}  else if (variable == "casterHasEffect" || variable == "CasterHasEffect") {
+				auto form = Utility::TES::GetFormFromEditorID<RE::EffectSetting>(svalue->c_str());
+
+				if (form) {
+					return form;
+				} else {
+					return 0.0f;
+				}
 			}
 		} else if (auto fvalue = std::get_if<float>(&value)) {
-			if (variable == "skill" || variable == "Skill") {
+			return *fvalue; //should always be able to just return the float, no interpretation necessary.
+			/* if (variable == "skill" || variable == "Skill") {
 				//logger::info("Assigned to {}", *fvalue);
 				return *fvalue;
 			} else if (variable == "difficulty" || variable == "Difficulty") {
@@ -91,13 +94,16 @@ namespace Conditions
 			} else if (variable == "global" || variable == "Global") { //need to think about this, what am I assigning here again?
 				return *fvalue;
 			}
+			*/
+		} else if (auto bvalue = std::get_if<bool>(&value)) {
+			return *bvalue; //should be able to just return the bool, no interpretation necessary
 		}
 	}
 
 	bool CheckCondition(Condition condition, RE::MagicCaster* caster)
 	{
 		//logger::info("check condition");
-		std::variant<std::monostate, RE::ActorValue, RE::MagicSystem::SpellType, RE::MagicSystem::CastingType, RE::MagicItem*, RE::Actor*, RE::BGSPerk*, RE::MagicSystem::CastingSource, std::string, float> argument;
+		std::variant<std::monostate, RE::ActorValue, RE::EffectSetting*, RE::MagicSystem::SpellType, RE::MagicSystem::CastingType, RE::MagicItem*, RE::Actor*, RE::BGSPerk*, RE::MagicSystem::CastingSource, std::string, float, bool> argument;
 		auto variable = condition.variable;
 		auto op = condition.op;
 		auto value = condition.value;
@@ -178,6 +184,36 @@ namespace Conditions
 					}
 				} else if (variable == "hand" || variable == "Hand") {
 					argument = hand;
+				} else if (variable == "isSneaking" || variable == "IsSneaking") {
+					if (actor) {
+						argument = actor->IsSneaking();
+					}
+				} else if (variable == "isDualCasting" || variable == "IsDualCasting") {
+					argument = caster->GetIsDualCasting();
+				} /* else if (variable == "isDetected" || variable == "IsDetected") { //seems trickier than anticipated
+					if (actor) {
+						argument = actor->RequestDetectionLevel();
+						RE::PlayerCharacter;
+					}
+				}*/ else if (variable == "casterHasEffect" || variable == "CasterHasEffect") {
+					if (auto activeEffect = actor->AsMagicTarget()->GetActiveEffectList()) {
+						bool hasIt = false;
+						for (auto& ae : *activeEffect) {
+							if (!ae) {
+								break;
+							}
+							if (!ae->effect) {
+								continue;
+							}
+							if (!ae->effect->baseEffect) {
+								continue;
+							}
+							if (ae->effect->baseEffect == *std::get_if<RE::EffectSetting*>(&value)) {
+								hasIt = true;
+							}
+						}
+						argument = hasIt;
+					}
 				}
 
 				if (op == ">") {

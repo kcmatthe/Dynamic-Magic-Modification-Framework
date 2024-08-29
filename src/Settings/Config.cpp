@@ -57,8 +57,7 @@ namespace config
 							const char* variable = "";
 							const char* variableDetail = "";
 							const char* op = "";
-							const char* condValue_s = "";
-							float condValue_f = -1;
+							std::variant<std::string, float, bool> condValue;
 
 							if (conditions[j].HasMember("condition")) {
 								if (conditions[j]["condition"].IsString()) {
@@ -86,36 +85,34 @@ namespace config
 
 								if (conditions[j].HasMember("value")) {
 									if (conditions[j]["value"].IsString()) {
-										condValue_s = overrides[i]["conditions"][j]["value"].GetString();
-										condValue_f = -1;
-
+										condValue = overrides[i]["conditions"][j]["value"].GetString();
 									} else if (conditions[j]["value"].IsFloat()) {
-										condValue_f = overrides[i]["conditions"][j]["value"].GetFloat();
-										condValue_s = "";
-
+										condValue = overrides[i]["conditions"][j]["value"].GetFloat();
+									} else if (conditions[j]["value"].IsBool()) {
+										condValue = overrides[i]["conditions"][j]["value"].GetBool();
 									} else {
-										condValue_f = -1;
-										condValue_s = "";
 										logger::info("No valid condition value");
 									}
 								} else {
-									condValue_f = -1;
-									condValue_s = "";
 									logger::info("No valid condition value");
 								}
 
-								if (condValue_s != "") {
-									auto assignedVariable = AssignVariable(variable, condValue_s);
+								if (!std::holds_alternative<std::string>(condValue) || (std::holds_alternative<std::string>(condValue) && *std::get_if<std::string>(&condValue) != "")) {
+									auto assignedVariable = AssignVariable(variable, condValue);
 									auto newCondition = Condition(variable, op, assignedVariable, variableDetail);
 									override->conditions.push_back(newCondition);
-									logger::info("Pushed back a new condition: {} {} {}", variable, op, condValue_s);
-								} else if (condValue_f != -1) {
-									auto assignedVariable = AssignVariable(variable, condValue_f);
-									auto newCondition = Condition(variable, op, assignedVariable, variableDetail);
-									override->conditions.push_back(newCondition);
-									logger::info("Pushed back a new condition: {} {} {}", variable, op, condValue_f);
+									if (std::holds_alternative<std::string>(condValue)) {
+										auto cvString = *std::get_if<std::string>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvString);
+									} else if (std::holds_alternative<std::string>(condValue)) {
+										auto cvFloat = *std::get_if<float>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvFloat);
+									} else if (std::holds_alternative<std::string>(condValue)) {
+										auto cvBool = *std::get_if<bool>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvBool);
+									}
 								}
-
+								
 							} else {
 								logger::info("No valid condition");
 							}
@@ -235,8 +232,7 @@ namespace config
 									const char* variable = "";
 									const char* variableDetail = "";
 									const char* op = "";
-									const char* condValue_s = "";
-									float condValue_f = -1;
+									std::variant<std::string, float, bool> condValue;
 
 									if (conditions[j].HasMember("condition")) {
 										if (conditions[j]["condition"].IsString()) {
@@ -263,40 +259,37 @@ namespace config
 
 										if (conditions[j].HasMember("value")) {
 											if (conditions[j]["value"].IsString()) {
-												condValue_s = multipliers[i]["conditions"][j]["value"].GetString();
-												condValue_f = -1;
+												condValue = multipliers[i]["conditions"][j]["value"].GetString();
 											} else if (conditions[j]["value"].IsFloat()) {
-												condValue_f = multipliers[i]["conditions"][j]["value"].GetFloat();
-												condValue_s = "";
-											} else {
-												condValue_f = -1;
-												condValue_s = "";
+												condValue = multipliers[i]["conditions"][j]["value"].GetFloat();
+											} else if (conditions[j]["value"].IsBool()) {
+												condValue = multipliers[i]["conditions"][j]["value"].GetBool();
+											}
+											else {
 												logger::info("No valid condition value");
 											}
 										} else {
-											condValue_f = -1;
-											condValue_s = "";
 											logger::info("No valid condition value");
 										}
 
-										if (condValue_s != "") {
-											auto assignedVariable = Conditions::AssignVariable(variable, condValue_s);
+										if (!std::holds_alternative<std::string>(condValue) || (std::holds_alternative<std::string>(condValue) && *std::get_if<std::string>(&condValue) != "")) {
+											auto assignedVariable = Conditions::AssignVariable(variable, condValue);
 											auto newCondition = Conditions::Condition(variable, op, assignedVariable, variableDetail);
 											if (isFunction) {
 												newMultiplierF->conditions.push_back(newCondition);
 											} else {
 												newMultiplier->conditions.push_back(newCondition);
 											}
-											logger::info("Pushed back a new condition: {} {} {}", variable, op, condValue_s);
-										} else if (condValue_f != -1) {
-											auto assignedVariable = AssignVariable(variable, condValue_f);
-											auto newCondition = Conditions::Condition(variable, op, assignedVariable, variableDetail);
-											if (isFunction) {
-												newMultiplierF->conditions.push_back(newCondition);
-											} else {
-												newMultiplier->conditions.push_back(newCondition);
+											if (std::holds_alternative<std::string>(condValue)) {
+												auto cvString = *std::get_if<std::string>(&condValue);
+												logger::info("Pushed back a new condition: {} {} {}", variable, op, cvString);
+											} else if (std::holds_alternative<std::string>(condValue)) {
+												auto cvFloat = *std::get_if<float>(&condValue);
+												logger::info("Pushed back a new condition: {} {} {}", variable, op, cvFloat);
+											} else if (std::holds_alternative<std::string>(condValue)) {
+												auto cvBool = *std::get_if<bool>(&condValue);
+												logger::info("Pushed back a new condition: {} {} {}", variable, op, cvBool);
 											}
-											logger::info("Pushed back a new condition: {} {} {}", variable, op, condValue_f);
 										}
 
 									} else {
@@ -448,8 +441,7 @@ namespace config
 									const char* variable = "";
 									const char* variableDetail = "";
 									const char* op = "";
-									const char* condValue_s = "";
-									float condValue_f = -1;
+									std::variant<std::string, float, bool> condValue;
 
 									if (conditions[j].HasMember("condition")) {
 										if (conditions[j]["condition"].IsString()) {
@@ -476,44 +468,40 @@ namespace config
 
 										if (conditions[j].HasMember("value")) {
 											if (conditions[j]["value"].IsString()) {
-												condValue_s = modifiers[i]["conditions"][j]["value"].GetString();
-												condValue_f = -1;
+												condValue = modifiers[i]["conditions"][j]["value"].GetString();
 											} else if (conditions[j]["value"].IsFloat()) {
-												condValue_f = modifiers[i]["conditions"][j]["value"].GetFloat();
-												condValue_s = "";
+												condValue = modifiers[i]["conditions"][j]["value"].GetFloat();
+											} else if (conditions[j]["value"].IsBool()) {
+												condValue = modifiers[i]["conditions"][j]["value"].GetBool();
 											} else {
-												condValue_f = -1;
-												condValue_s = "";
 												logger::info("No valid condition value");
 											}
 										} else {
-											condValue_f = -1;
-											condValue_s = "";
 											logger::info("No valid condition value");
 										}
 
-										if (condValue_s != "") {
-											auto assignedVariable = AssignVariable(variable, condValue_s);
-											auto newCondition = Condition(variable, op, assignedVariable, variableDetail);
+										if (!std::holds_alternative<std::string>(condValue) || (std::holds_alternative<std::string>(condValue) && *std::get_if<std::string>(&condValue) != "")) {
+											auto assignedVariable = Conditions::AssignVariable(variable, condValue);
+											auto newCondition = Conditions::Condition(variable, op, assignedVariable, variableDetail);
 											if (isFunction) {
 												newModifierF->conditions.push_back(newCondition);
 											} else {
 												newModifier->conditions.push_back(newCondition);
 											}
-											logger::info("Pushed back a new condition: {} {} {}", variable, op, condValue_s);
-										} else if (condValue_f != -1) {
-											auto assignedVariable = AssignVariable(variable, condValue_f);
-											auto newCondition = Condition(variable, op, assignedVariable, variableDetail);
-											if (isFunction) {
-												newModifierF->conditions.push_back(newCondition);
-											} else {
-												newModifier->conditions.push_back(newCondition);
+											if (std::holds_alternative<std::string>(condValue)) {
+												auto cvString = *std::get_if<std::string>(&condValue);
+												logger::info("Pushed back a new condition: {} {} {}", variable, op, cvString);
+											} else if (std::holds_alternative<std::string>(condValue)) {
+												auto cvFloat = *std::get_if<float>(&condValue);
+												logger::info("Pushed back a new condition: {} {} {}", variable, op, cvFloat);
+											} else if (std::holds_alternative<std::string>(condValue)) {
+												auto cvBool = *std::get_if<bool>(&condValue);
+												logger::info("Pushed back a new condition: {} {} {}", variable, op, cvBool);
 											}
-											logger::info("Pushed back a new condition: {} {} {}", variable, op, condValue_f);
 										}
 
 									} else {
-										logger::info("no valid condition");
+										logger::info("No valid condition");
 									}
 								}
 
@@ -621,9 +609,8 @@ namespace config
 							const char* variable = "";
 							const char* variableDetail = "";
 							const char* op = "";
-							const char* condValue_s = "";
-							float condValue_f = -1;
-							
+							std::variant<std::string, float, bool> condValue;
+
 							if (conditions[j].HasMember("condition")) {
 								if (conditions[j]["condition"].IsString()) {
 									variable = conditions[j]["condition"].GetString();
@@ -640,46 +627,42 @@ namespace config
 									logger::info("No valid variable");
 								}
 
-								
 								if (conditions[j].HasMember("operator") && conditions[j]["operator"].IsString()) {
 									op = conditions[j]["operator"].GetString();
-									
+
 								} else {
 									op = "";
 									logger::info("No valid operator");
 								}
-								
+
 								if (conditions[j].HasMember("value")) {
 									if (conditions[j]["value"].IsString()) {
-										condValue_s = resources[i]["conditions"][j]["value"].GetString();
-										condValue_f = -1;
-										
+										condValue = resources[i]["conditions"][j]["value"].GetString();
 									} else if (conditions[j]["value"].IsFloat()) {
-										condValue_f = resources[i]["conditions"][j]["value"].GetFloat();
-										condValue_s = "";
-										
+										condValue = resources[i]["conditions"][j]["value"].GetFloat();
+									} else if (conditions[j]["value"].IsBool()) {
+										condValue = resources[i]["conditions"][j]["value"].GetBool();
 									} else {
-										condValue_f = -1;
-										condValue_s = "";
 										logger::info("No valid condition value");
 									}
 								} else {
-									condValue_f = -1;
-									condValue_s = "";
 									logger::info("No valid condition value");
 								}
-								
 
-								if (condValue_s != "") {
-									auto assignedVariable = AssignVariable(variable, condValue_s);
+								if (!std::holds_alternative<std::string>(condValue) || (std::holds_alternative<std::string>(condValue) && *std::get_if<std::string>(&condValue) != "")) {
+									auto assignedVariable = AssignVariable(variable, condValue);
 									auto newCondition = Condition(variable, op, assignedVariable, variableDetail);
 									resource->conditions.push_back(newCondition);
-									logger::info("Pushed back a new condition: {} {} {}", variable, op, condValue_s);
-								} else if (condValue_f != -1) {
-									auto assignedVariable = AssignVariable(variable, condValue_f);
-									auto newCondition = Condition(variable, op, assignedVariable, variableDetail);
-									resource->conditions.push_back(newCondition);
-									logger::info("Pushed back a new condition: {} {} {}", variable, op, condValue_f);
+									if (std::holds_alternative<std::string>(condValue)) {
+										auto cvString = *std::get_if<std::string>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvString);
+									} else if (std::holds_alternative<std::string>(condValue)) {
+										auto cvFloat = *std::get_if<float>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvFloat);
+									} else if (std::holds_alternative<std::string>(condValue)) {
+										auto cvBool = *std::get_if<bool>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvBool);
+									}
 								}
 
 							} else {
@@ -747,8 +730,7 @@ namespace config
 							const char* variable = "";
 							const char* variableDetail = "";
 							const char* op = "";
-							const char* condValue_s = "";
-							float condValue_f = -1;
+							std::variant<std::string, float, bool> condValue;
 
 							if (conditions[j].HasMember("condition")) {
 								if (conditions[j]["condition"].IsString()) {
@@ -776,34 +758,32 @@ namespace config
 
 								if (conditions[j].HasMember("value")) {
 									if (conditions[j]["value"].IsString()) {
-										condValue_s = replacements[i]["conditions"][j]["value"].GetString();
-										condValue_f = -1;
-
+										condValue = replacements[i]["conditions"][j]["value"].GetString();
 									} else if (conditions[j]["value"].IsFloat()) {
-										condValue_f = replacements[i]["conditions"][j]["value"].GetFloat();
-										condValue_s = "";
-
+										condValue = replacements[i]["conditions"][j]["value"].GetFloat();
+									} else if (conditions[j]["value"].IsBool()) {
+										condValue = replacements[i]["conditions"][j]["value"].GetBool();
 									} else {
-										condValue_f = -1;
-										condValue_s = "";
 										logger::info("No valid condition value");
 									}
 								} else {
-									condValue_f = -1;
-									condValue_s = "";
 									logger::info("No valid condition value");
 								}
 
-								if (condValue_s != "") {
-									auto assignedVariable = AssignVariable(variable, condValue_s);
+								if (!std::holds_alternative<std::string>(condValue) || (std::holds_alternative<std::string>(condValue) && *std::get_if<std::string>(&condValue) != "")) {
+									auto assignedVariable = AssignVariable(variable, condValue);
 									auto newCondition = Condition(variable, op, assignedVariable, variableDetail);
 									replacement->conditions.push_back(newCondition);
-									logger::info("Pushed back a new condition: {} {} {}", variable, op, condValue_s);
-								} else if (condValue_f != -1) {
-									auto assignedVariable = AssignVariable(variable, condValue_f);
-									auto newCondition = Condition(variable, op, assignedVariable, variableDetail);
-									replacement->conditions.push_back(newCondition);
-									logger::info("Pushed back a new condition: {} {} {}", variable, op, condValue_f);
+									if (std::holds_alternative<std::string>(condValue)) {
+										auto cvString = *std::get_if<std::string>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvString);
+									} else if (std::holds_alternative<std::string>(condValue)) {
+										auto cvFloat = *std::get_if<float>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvFloat);
+									} else if (std::holds_alternative<std::string>(condValue)) {
+										auto cvBool = *std::get_if<bool>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvBool);
+									}
 								}
 
 							} else {
