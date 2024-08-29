@@ -192,3 +192,13 @@ extern "C" DLLEXPORT void SetResource(RE::MagicCaster* caster, RE::ActorValue re
 	*it = currentCast;
 }
 
+extern "C" DLLEXPORT RE::ActorValue GetResource(RE::MagicCaster* caster)
+{
+	logger::info("GetResource called from API");
+	auto it = Cast::GetCastInstance(caster);
+	auto currentCast = *it;
+	logger::info("Returning resource: {}", currentCast.resource);
+	
+	return currentCast.resource;
+}
+

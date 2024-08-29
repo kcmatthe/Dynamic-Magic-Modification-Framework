@@ -37,5 +37,9 @@ extern "C" DLLEXPORT void AddMagModifier(RE::MagicCaster* caster, float mod);
 extern "C" DLLEXPORT void SetSpell(RE::MagicCaster* caster, RE::MagicItem* spell);	
 
 extern "C" DLLEXPORT void SetResource(RE::MagicCaster* caster, RE::ActorValue resource);
+
+extern "C" DLLEXPORT RE::ActorValue GetResource(RE::MagicCaster* caster);
+
+
 	
 

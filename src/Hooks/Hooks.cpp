@@ -135,8 +135,10 @@ namespace Hooks
 		auto actor = caster->GetCasterAsActor();
 		auto cost = currentCast.cost->updatedCost;
 		caster->currentSpellCost = cost;
+		auto mag = caster->currentSpell->GetCostliestEffectItem()->GetMagnitude();
+		auto resource = currentCast.resource;
 
-		logger::info("Starting charge for {}'s {} spell. Charge time is {} seconds, cost is {}\n", magic->GetFullName(), actor->GetDisplayFullName(), chargeTime, cost);
+		logger::info("Starting charge for {}'s {} spell. Charge time is {} seconds, cost is {}, magnitude is {}, and resource used is {}\n", actor->GetDisplayFullName(), magic->GetFullName(), chargeTime, cost, mag, resource);
 
 		func4(caster);
 	}
@@ -439,11 +441,11 @@ namespace Hooks
 					default:
 						break;
 					}
-					logger::info("State: {}, av: {}, cost: {}, value: {}", caster->state.get(), ResourceAcV, MagickaCost);
+					//logger::info("State: {}, av: {}, cost: {}, value: {}", caster->state.get(), ResourceAcV, MagickaCost);
 					if (bUsesResource &&
 						MagickaCost > 0.0f) {
 						auto Magicka = (useBaseValueForCost) ? AlternateAV::GetBaseActorValue(caster->actor, ResourceAcV) : AlternateAV::GetActorValue(caster->actor, ResourceAcV);
-						logger::info("State: {}, av: {}, cost: {}, value: {}", caster->state.get(), ResourceAcV, MagickaCost, Magicka);
+						//logger::info("State: {}, av: {}, cost: {}, value: {}", caster->state.get(), ResourceAcV, MagickaCost, Magicka);
 						if (ResourceAcV == RE::ActorValue::kHealth) { 
 							bHasResource = Magicka >= MagickaCost;//This ensures that player does not kill themselves when casting concentration spells
 						} else {
