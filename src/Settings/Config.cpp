@@ -842,9 +842,6 @@ namespace config
 		std::vector<std::filesystem::path> configPaths = clib_util::distribution::get_configs_paths(R"(Data\SKSE\Plugins\DynamicMagicModificationFramework\)", "_DMMF"sv, ".json");  //change to be _DMMF instead
 		std::filesystem::path configPath{ "Data/SKSE/Plugins/DynamicMagicModificationFramework/"sv };
 
-		auto configLocationDefaultSpells = configPath / "ChargeTime.json"sv;
-		configPaths.insert(configPaths.begin(), configLocationDefaultSpells);
-
 		logger::info("Iterating through {} json files", configPaths.size());
 		for (auto configLocation : configPaths) {
 			logger::info("\n\n");
