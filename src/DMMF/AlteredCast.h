@@ -53,6 +53,7 @@ namespace Cast
 		AlteredCost(RE::MagicCaster* c, float cost, bool o, bool e, float val, std::vector<float> mult, std::vector<float> mod)
 		{
 			caster = c;
+			newBaseCost = cost;
 			override = o;
 			excluded = e;
 			overrideValue = val;
@@ -89,6 +90,7 @@ namespace Cast
 		AlteredMagnitude(RE::MagicCaster* c, float mag, bool o, bool e, float val, bool costliest, std::vector<float> mult, std::vector<float> mod)
 		{
 			caster = c;
+			newBaseMag = mag;
 			override = o;
 			excluded = e;
 			overrideValue = val;

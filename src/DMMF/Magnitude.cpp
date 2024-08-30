@@ -73,8 +73,6 @@ namespace Magnitude
 
 	void AddMagModifiersOnCast(RE::MagicCaster* caster)
 	{
-		auto spell = caster->currentSpell;
-
 		logger::debug("Going through {} modifiers", mModifiers.size());
 		for (Modifier* modifier : mModifiers) {
 			std::vector<bool> bools = {};
@@ -165,8 +163,6 @@ namespace Magnitude
 
 	void AddMagMultipliersOnCast(RE::MagicCaster* caster)
 	{
-		auto spell = caster->currentSpell;
-
 		logger::debug("Going through {} multipliers", mMultipliers.size());
 		for (Multiplier* multiplier : mMultipliers) {
 			std::vector<bool> bools = {};
@@ -257,8 +253,6 @@ namespace Magnitude
 
 	void AddMagOverridesOnCast(RE::MagicCaster* caster)
 	{
-		auto spell = caster->currentSpell;
-
 		logger::debug("Going through {} overrides", mOverrides.size());
 		for (auto override : mOverrides) {
 			std::vector<bool> bools = {};

@@ -98,8 +98,6 @@ namespace Cost
 
 	void AddCostModifiersOnCast(RE::MagicCaster* caster)
 	{
-		auto spell = caster->currentSpell;
-
 		logger::debug("Going through {} cost modifiers", cModifiers.size());
 		for (Modifier* modifier : cModifiers) {
 			std::vector<bool> bools = {};
@@ -282,8 +280,6 @@ namespace Cost
 
 	void AddCostOverridesOnCast(RE::MagicCaster* caster)
 	{
-		auto spell = caster->currentSpell;
-
 		logger::debug("Going through {} cost overrides", cOverrides.size());
 		for (auto override : cOverrides) {
 			std::vector<bool> bools = {};

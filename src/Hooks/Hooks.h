@@ -32,9 +32,6 @@ namespace Hooks
 		static void StartCastImpl(RE::MagicCaster* caster);
 		static inline REL::Relocation<decltype(StartCastImpl)> func6;
 
-		static void FinishCastImpl(RE::MagicCaster* caster);
-		static inline REL::Relocation<decltype(FinishCastImpl)> func7;
-
 		static void InterruptCastImpl(RE::ActorMagicCaster* caster, bool refund);
 		static inline REL::Relocation<decltype(InterruptCastImpl)> func8;
 

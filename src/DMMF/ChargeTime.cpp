@@ -105,8 +105,6 @@ namespace ChargeTime
 	
 	void AddChargeModifiersOnCast(RE::MagicCaster* caster) 
 	{
-		auto spell = caster->currentSpell;
-		
 		logger::debug("Going through {} charge time modifiers", ctModifiers.size());
 		for (Modifier* modifier : ctModifiers) {
 			std::vector<bool> bools = {};
@@ -198,8 +196,6 @@ namespace ChargeTime
 
 	void AddChargeMultipliersOnCast(RE::MagicCaster* caster)
 	{
-		auto spell = caster->currentSpell;
-		
 		logger::debug("Going through {} charge time multipliers", ctMultipliers.size());
 		for (Multiplier* multiplier : ctMultipliers) {
 			std::vector<bool> bools = {};
@@ -290,8 +286,6 @@ namespace ChargeTime
 	}
 
 	void AddChargeOverridesOnCast(RE::MagicCaster* caster) {
-		auto spell = caster->currentSpell;
-
 		logger::debug("Going through {} charge time overrides", ctOverrides.size());
 		for (auto override : ctOverrides) {
 			std::vector<bool> bools = {};

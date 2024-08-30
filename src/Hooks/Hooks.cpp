@@ -163,14 +163,6 @@ namespace Hooks
 	}
 
 	//This doesn't seem to get called
-	void CasterHook::FinishCastImpl(RE::MagicCaster* caster)
-	{
-		logger::trace("FinishCast");
-		auto spell = caster->currentSpell;
-		logger::info("Finished cast for spell {}", spell->fullName.c_str());
-		func7(caster);
-	}
-
 	void CasterHook::InterruptCastHelper(RE::ActorMagicCaster* caster, RE::MagicSystem::CannotCastReason reason) {
 		logger::trace("InterruptCastHelper");
 		if (caster->currentSpell &&
@@ -843,7 +835,6 @@ namespace Hooks
 		CasterHook::func4 = ActorCasterVtbl.write_vfunc(0x4, &CasterHook::StartChargeImpl);
 		CasterHook::func5 = ActorCasterVtbl.write_vfunc(0x5, &CasterHook::StartReadyImpl);
 		CasterHook::func6 = ActorCasterVtbl.write_vfunc(0x6, &CasterHook::StartCastImpl);
-		CasterHook::func7 = CasterVtbl.write_vfunc(0x7, &CasterHook::FinishCastImpl);
 		CasterHook::func8 = ActorCasterVtbl.write_vfunc(0x8, &CasterHook::InterruptCastImpl);
 		CasterHook::func9 = ActorCasterVtbl.write_vfunc(0x9, &CasterHook::SpellCast);
 		CasterHook::funcA = ActorCasterVtbl.write_vfunc(0xA, &CasterHook::CheckCast);
