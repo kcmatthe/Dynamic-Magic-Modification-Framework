@@ -10,9 +10,10 @@ namespace Conditions
 
 		if (auto svalue = std::get_if<std::string>(&value)) {
 			if (variable == "form" || variable == "Form") {
-				auto form = Utility::TES::GetFormFromEditorID<RE::MagicItem>(svalue->c_str());
+				auto form = Utility::TES::GetFormFromString<RE::MagicItem>(*svalue);
 
 				if (form) {
+					logger::debug("Form is {}", Utility::TES::GetFormName(form).c_str());
 					return form;
 				} else {
 					return 0.0f;
@@ -25,9 +26,10 @@ namespace Conditions
 					return RE::MagicSystem::CastingSource::kRightHand;
 				}
 			} else if (variable == "perk" || variable == "Perk") {
-				auto form = Utility::TES::GetFormFromEditorID<RE::BGSPerk>(svalue->c_str());
+				auto form = Utility::TES::GetFormFromString<RE::BGSPerk>(*svalue);
 
 				if (form) {
+					logger::debug("Form is {}", Utility::TES::GetFormName(form).c_str());
 					return form;
 				} else {
 					return 0.0f;
@@ -39,9 +41,10 @@ namespace Conditions
 					RE::Actor* PlayerRef = RE::PlayerCharacter::GetSingleton();
 					return PlayerRef;
 				} else {
-					auto actor = Utility::TES::GetFormFromEditorID<RE::Actor>(svalue->c_str());
+					auto actor = Utility::TES::GetFormFromString<RE::Actor>(*svalue);
 
 					if (actor) {
+						logger::debug("Form is {}", Utility::TES::GetFormName(actor).c_str());
 						return actor;
 					} else {
 						return 0.0f;
@@ -75,9 +78,10 @@ namespace Conditions
 					return RE::MagicSystem::SpellType::kStaffEnchantment;
 				}
 			}  else if (variable == "casterHasEffect" || variable == "CasterHasEffect") {
-				auto form = Utility::TES::GetFormFromEditorID<RE::EffectSetting>(svalue->c_str());
-
+				auto form = Utility::TES::GetFormFromString<RE::EffectSetting>(*svalue);
+				
 				if (form) {
+					logger::debug("Form is {}", Utility::TES::GetFormName(form).c_str());
 					return form;
 				} else {
 					return 0.0f;

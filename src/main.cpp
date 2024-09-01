@@ -35,7 +35,6 @@ namespace
 			logger::info("Data Loaded");
 
 			config::GetFromJSON();
-			Spell::GetPluginData();
 			ReadFirstFormIdFromESP();
 		} 
 

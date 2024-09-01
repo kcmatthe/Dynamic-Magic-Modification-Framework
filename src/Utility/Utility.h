@@ -6,6 +6,8 @@
 #pragma warning(disable: 4267)
 #pragma warning(disable: 4100)
 
+#include <ClibUtil/string.hpp>
+
 namespace Utility
 {
 	namespace Format
@@ -86,12 +88,54 @@ namespace Utility
 				ret = f->As<T>();
 			}
 
-			if (ret != nullptr) {
+			if (ret) {
 				//logger::info("Found form {}", id);
 			} else {
-				logger::info("Could not find {}. Returning nullptr", id);
+				logger::warn("Could not find {}. Returning nullptr", id);
 			}
 			return ret;
+		}
+
+		template <typename T>
+		T* GetFormFromString(std::string id)
+		{
+			T* response = nullptr;
+
+			if (const auto splitID = clib_util::string::split(id, "|"); splitID.size() == 2) {
+				if (!clib_util::string::is_only_hex(splitID[0])) {
+					logger::warn("{} is not hex only. Returning nullptr", splitID[0]);
+					return response;
+				}
+				const auto formID = clib_util::string::to_num<RE::FormID>(splitID[0], true);
+
+				const auto& modName = splitID[1];
+				if (!RE::TESDataHandler::GetSingleton()->LookupModByName(modName)) {
+					logger::warn("Could not find mod: {}. Returning nullptr", modName);
+					return response;
+				}
+
+				T* baseForm = nullptr;
+				if (const auto f = RE::TESDataHandler::GetSingleton()->LookupForm(formID, modName)) {
+					baseForm = f->As<T>();
+				}
+				
+				if (baseForm) {
+					return baseForm;
+				} else {
+					logger::warn("Could not find form {} from mod {}. Returning nullptr", formID, modName);
+					return response;
+				}
+			}
+
+			T* form = nullptr;
+			if (const auto f = RE::TESForm::LookupByEditorID(id)) {
+				form = f->As<T>();
+			}
+			if (form) {
+				return form;
+			}
+			logger::warn("Could not find {}. Returning nullptr", id);
+			return response;
 		}
 
 		static constexpr auto controlFlags = static_cast<RE::ControlMap::UEFlag>(1036);

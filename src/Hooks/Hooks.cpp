@@ -135,7 +135,7 @@ namespace Hooks
 		auto actor = caster->GetCasterAsActor();
 		auto cost = currentCast.cost->updatedCost;
 		caster->currentSpellCost = cost;
-		auto mag = caster->currentSpell->GetCostliestEffectItem()->GetMagnitude();
+		auto mag = caster->currentSpell->GetCostliestEffectItem()->GetMagnitude(); //seems to not be getting the modified magnitude, even though the modified magnitude works.
 		auto resource = currentCast.resource;
 
 		logger::info("Starting charge for {}'s {} spell. Charge time is {} seconds, cost is {}, magnitude is {}, and resource used is {}\n", actor->GetDisplayFullName(), magic->GetFullName(), chargeTime, cost, mag, resource);

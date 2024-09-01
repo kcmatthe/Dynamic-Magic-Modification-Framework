@@ -64,7 +64,7 @@ void ReadFirstFormIdFromESP()
 {
 	const auto dataHandler = RE::TESDataHandler::GetSingleton();
 
-	auto id = dataHandler->LookupFormID(0x808, "DynamicMagicModificationFramework.esp");
+	auto id = dataHandler->LookupFormID(0x800, "DynamicMagicModificationFramework.esp");
 
 	if (id != 0) {
 		espFound = true;

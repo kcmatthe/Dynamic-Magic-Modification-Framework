@@ -524,11 +524,11 @@ namespace config
 								if (parameter_s == "Time" || parameter_s == "time") {
 									if (isFunction) {
 										newModifierF->condOp = condOp;
-										cModifiersF.push_back(newModifierF);
+										ctModifiersF.push_back(newModifierF);
 										logger::info("A modifier effecting parameter: {} with the function: '{}' added with {} conditions", parameter_s, function, numCond);
 									} else {
 										newModifier->condOp = condOp;
-										cModifiers.push_back(newModifier);
+										ctModifiers.push_back(newModifier);
 										logger::info("A modifier of {} effecting parameter: {} added with {} conditions", mult, parameter_s, numCond);
 									}
 								} else if (parameter_s == "Cost" || parameter_s == "cost") {
@@ -544,11 +544,11 @@ namespace config
 								} else if (parameter_s == "Magnitude" || parameter_s == "magnitude") {
 									if (isFunction) {
 										newModifierF->condOp = condOp;
-										cModifiersF.push_back(newModifierF);
+										mModifiersF.push_back(newModifierF);
 										logger::info("A modifier effecting parameter: {} with the function: '{}' added with {} conditions", parameter_s, function, numCond);
 									} else {
 										newModifier->condOp = condOp;
-										cModifiers.push_back(newModifier);
+										mModifiers.push_back(newModifier);
 										logger::info("A modifier of {} effecting parameter: {} added with {} conditions", mult, parameter_s, numCond);
 									}
 								} else {

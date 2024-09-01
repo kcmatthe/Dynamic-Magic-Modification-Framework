@@ -14,17 +14,7 @@ namespace Spell
 
 	void GetPluginData()
 	{
-		GenericSpell = Utility::TES::GetFormFromEditorID<RE::MagicItem>("_DMMF_GenericSpell");
-
-		GenericSpell_PlayerLeft = Utility::TES::GetFormFromEditorID<RE::MagicItem>("_DMMF_GenericSpell_PlayerLeft");
-		GenericSpell_PlayerRight = Utility::TES::GetFormFromEditorID<RE::MagicItem>("_DMMF_GenericSpell_PlayerRight");
-		GenericSpell_PlayerVoice = Utility::TES::GetFormFromEditorID<RE::MagicItem>("_DMMF_GenericSpell_PlayerVoice");
-
-		GenericSpell_NPCLeft = Utility::TES::GetFormFromEditorID<RE::MagicItem>("_DMMF_GenericSpell_NPCLeft");
-		GenericSpell_NPCRight = Utility::TES::GetFormFromEditorID<RE::MagicItem>("_DMMF_GenericSpell_NPCRight");
-		GenericSpell_NPCVoice = Utility::TES::GetFormFromEditorID<RE::MagicItem>("_DMMF_GenericSpell_NPCVoice");
-
-		GenericEffect = Utility::TES::GetFormFromEditorID<RE::EffectSetting>("_DMMF_GenericMGEF");
+		
 	}
 
 	//These seem to work. Just need to figure out if it is worth it to delete forms as we go. Probably is worth it but idk the best way to do so.
@@ -187,10 +177,7 @@ namespace Spell
 	
 		if (to) {
 			_copySpell(from->As<RE::SpellItem>(), to->As<RE::SpellItem>());
-		} else {
-			to = GenericSpell;
-			_copySpell(from->As<RE::SpellItem>(), to->As<RE::SpellItem>());
-		}
+		} 
 
 		return to;
 	}
@@ -236,7 +223,7 @@ namespace Spell
 					logger::debug("Only altering costliest effect");
 					currentCast.spell->modified->GetCostliestEffectItem()->effectItem.magnitude = Magnitude::CalculateNewMag(spell->GetCostliestEffectItem()->effectItem.magnitude, magnitude);
 				} else {
-					for (auto effect : GenericSpell->effects) {
+					for (auto effect : currentCast.spell->modified->effects) {
 						effect->effectItem.magnitude = Magnitude::CalculateNewMag(effect->effectItem.magnitude, magnitude);
 					}
 				}
