@@ -401,7 +401,14 @@ namespace Hooks
 						ResourceAcV = UpdateCastingResource(caster);  // need to be careful with this regarding spell vs enchantment
 					}
 					if (ResourceAcV != RE::ActorValue::kNone) {
-						MagickaCost = AlternateAV::GetMagickaCost(spell, caster->actor, dualCast);
+						CalculateNewCost(caster);
+						auto it = GetCastInstance(caster);
+						auto currentCast = *it;
+						if (currentCast.cost) {
+							MagickaCost = currentCast.cost->updatedCost;
+						} else {
+							MagickaCost = AlternateAV::GetMagickaCost(spell, caster->actor, dualCast);
+						}
 					}
 
 					auto bUsesResource{ false };
@@ -730,25 +737,8 @@ namespace Hooks
 			} else if (caster->state.get() == RE::MagicCaster::State::kCharging && bUsesWhileCharging) {
 				if (!bUsesWhileCasting) {
 					float origin = caster->currentSpell->GetChargeTime();
-					auto it = Cast::GetCastInstance(caster);
-					auto currentCast = *it;
-					if (!currentCast.charge) {
-						currentCast.charge = new Cast::AlteredCharge();
-					}
-					float newTime = currentCast.charge->updatedTime;
-					/* auto origin = caster->currentSpell->GetChargeTime();
-					if ((origin - 1) > 0) {
-						MagickaDiff /= (origin - 1);
-					} else {
-						MagickaDiff /= origin;  //this might be an issue - or maybe not?
-					}
-					*/
-					//MagickaDiff /= CalculateNewChargeTime(caster, origin - 1);
-					if (newTime > 0) {
-						MagickaDiff /= newTime;
-					} else {
-						MagickaDiff /= origin;
-					}
+					
+					MagickaDiff /= origin;
 				}
 
 				caster->costCharged += MagickaDiff;
