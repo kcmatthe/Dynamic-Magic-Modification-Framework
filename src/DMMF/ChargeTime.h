@@ -2,11 +2,12 @@
 
 namespace ChargeTime
 {
-	void CalculateNewChargeTime(RE::MagicCaster* caster, float origin, bool log = false);
+	void CalculateNewChargeTime(RE::MagicCaster* caster, float origin);
 
 	void AddChargeMultipliersOnCast(RE::MagicCaster* caster);
 	void AddChargeModifiersOnCast(RE::MagicCaster* caster);
 	void AddChargeOverridesOnCast(RE::MagicCaster* caster);
 
+	
 }
 

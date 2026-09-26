@@ -9,7 +9,11 @@
 #include <rapidjson/writer.h>
 #include <cstdio>
 
-#include "Conditions.h"
+
+namespace Conditions
+{
+	struct Condition;
+}
 
 namespace config
 {
@@ -31,7 +35,8 @@ namespace config
 			condOp = co;
 		}
 
-		Override() {
+		Override()
+		{
 			excluded = false;
 			override = false;
 			value = -1;
@@ -45,9 +50,9 @@ namespace config
 	public:
 		std::string function;
 		std::vector<std::tuple<std::string, std::string, std::string>> variables;
-		
 
-		Function() {
+		Function()
+		{
 			function = "";
 			variables = {};
 		}
@@ -84,11 +89,9 @@ namespace config
 	struct Multiplier
 	{
 	public:
-		
 		float value;
 		std::vector<Conditions::Condition> conditions;
 		std::string condOp;
-
 
 		Multiplier(float v, std::vector<Conditions::Condition> c, std::string co)
 		{
@@ -97,7 +100,8 @@ namespace config
 			condOp = co;
 		}
 
-		Multiplier() {
+		Multiplier()
+		{
 			value = -1;
 			conditions = {};
 			condOp = "";
@@ -152,12 +156,16 @@ namespace config
 	{
 	public:
 		RE::ActorValue resource;
+		RE::ActorValue secondaryResource;
+		float secondaryMult;
 		std::vector<Conditions::Condition> conditions;
 		std::string condOp;
 
-		CastingResource(RE::ActorValue av, std::vector<Conditions::Condition> c, std::string co)
+		CastingResource(RE::ActorValue av, RE::ActorValue av2, float mult, std::vector<Conditions::Condition> c, std::string co)
 		{
 			resource = av;
+			secondaryResource = av2;
+			secondaryMult = mult;
 			conditions = c;
 			condOp = co;
 		}
@@ -165,6 +173,8 @@ namespace config
 		CastingResource()
 		{
 			resource = RE::ActorValue::kMagicka;
+			secondaryResource = RE::ActorValue::kNone;
+			secondaryMult = 1;
 			conditions = {};
 			condOp = "";
 		}
@@ -210,15 +220,19 @@ namespace config
 	inline std::vector<Modifier*> mModifiers;
 	inline std::vector<ModifierF*> mModifiersF;
 
+	inline std::vector<Override*> dOverrides;
+	inline std::vector<Multiplier*> dMultipliers;
+	inline std::vector<MultiplierF*> dMultipliersF;
+	inline std::vector<Modifier*> dModifiers;
+	inline std::vector<ModifierF*> dModifiersF;
+
 	inline std::vector<CastingResource*> Resources;
 	inline std::vector<ReplacementSpell*> Replacements;
 
 	bool GetFromJSON();
-	/*
-	bool GetOverrides(rapidjson::Document& config, std::string configLocation);
-	bool GetMultipliers(rapidjson::Document& config, std::string configLocation);
-	bool GetModifiers(rapidjson::Document& config, std::string configLocation);
-	bool GetResources(rapidjson::Document& config, std::string configLocation);
-	*/
-}
 
+	inline std::string magicka = "You don't have enough Magicka";
+	inline std::string health = "You don't have enough Health";
+	inline std::string stamina = "You don't have enough Stamina";
+	inline std::string energy = "You don't have enough Energy";
+}

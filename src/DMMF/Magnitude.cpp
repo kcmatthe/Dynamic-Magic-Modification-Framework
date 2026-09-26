@@ -1,12 +1,15 @@
 #include "Settings/Config.h"
 #include "Utility/Function.h"
 #include "Magnitude.h"
+#include "Settings/Conditions.h"
 
 namespace Magnitude
 {
 	using namespace config;
 	using namespace Cast;
 	using namespace Conditions;
+
+	//Magnitude
 
 	float CalculateNewMag(float origin, AlteredMagnitude* magnitude)
 	{
@@ -17,55 +20,42 @@ namespace Magnitude
 		
 		if (magnitude->newBaseMag >= 0) {
 			newMag = magnitude->newBaseMag;
-
 			logger::debug("Base magnitude set to {}", newMag);
-
 		} else {
-
-			logger::debug("Base magnitude was less than 0; setting to origin ({}).", origin);
-			
+			logger::debug("Base magnitude was less than 0; setting to origin ({}).", origin);			
 			newMag = origin;
+			magnitude->newBaseMag = origin;
 		}
 
 		if (excluded) {
 			if (override) {
 				newMag = magnitude->overrideValue;
-
 				logger::info("Exclusion detected and override detected; returning override value of {}", newMag);
-
 				return newMag;
 			} else {
-
 				logger::info("Exclusion detected, returning original magnitude of {}", origin);  //this is giving a weird value
-
 				return origin;
 			}
 		} else {
-
 			logger::debug("No exclusion was detected.");
-
 			if (override) {
 				newMag = magnitude->overrideValue;
-
 				logger::debug("Override detected; base magnitude set to {}. This may be further modified.", newMag);
-
 			}
 		}
 
 		for (auto multiplier : magnitude->multipliers) {
 			newMag = newMag * multiplier;
-
 			logger::debug("magnitude multiplied by {}", multiplier);
-			
 		}
 
 		for (auto modifier : magnitude->modifiers) {
 			newMag = newMag + modifier;
-
 			logger::debug("magnitude modified by {}", modifier);
 		}
 
 		logger::debug("New magnitude is {}", newMag);
+		magnitude->updatedMag = newMag;
 
 		return newMag;
 
@@ -73,17 +63,17 @@ namespace Magnitude
 
 	void AddMagModifiersOnCast(RE::MagicCaster* caster)
 	{
-		logger::debug("Going through {} modifiers", mModifiers.size());
+		logger::debug("Going through {} mag modifiers", mModifiers.size());
 		for (Modifier* modifier : mModifiers) {
 			std::vector<bool> bools = {};
 			bool conditionsMet = false;
 			for (Condition condition : modifier->conditions) {
-				auto tempBool = CheckCondition(condition, caster);
-				logger::debug("Individual condition check was {}", tempBool);
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
 				bools.push_back(tempBool);
 			}
 			if (modifier->condOp == "or") {
-				logger::debug("The comparative operator was 'or'");
+				logger::trace("The comparative operator was 'or'");
 				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
 				if (boolIt != bools.end()) {
@@ -93,7 +83,7 @@ namespace Magnitude
 				}
 			}
 			if (modifier->condOp == "and") {
-				logger::debug("The comparative operator was 'and'");
+				logger::trace("The comparative operator was 'and'");
 				auto boolIt = std::find(bools.begin(), bools.end(), false);
 
 				if (boolIt != bools.end()) {
@@ -103,29 +93,29 @@ namespace Magnitude
 				}
 			}
 			if (conditionsMet) {
-				auto it = GetCastInstance(caster);
-				auto currentCast = *it;
+				auto& currentCast = Cast::GetCastInstance(caster);
+
 				if (!currentCast.magnitude) {
-					currentCast.magnitude = new AlteredMagnitude();
+					currentCast.magnitude = std::make_unique<AlteredMagnitude>();
 				}
+
 				currentCast.magnitude->modifiers.push_back(modifier->value);
-				*it = currentCast;
-				logger::debug("Conditions were met; a modifier of {} added", modifier->value);
+				logger::debug("Conditions were met; a mag modifier of {} added", modifier->value);
 			} else {
-				logger::debug("Conditions were not met; no modifier added");
+				logger::debug("Conditions were not met; no mag modifier added");
 			}
 		}
-		logger::debug("Going through {} function modifiers", mModifiersF.size());
+		logger::debug("Going through {} mag function modifiers", mModifiersF.size());
 		for (ModifierF* modifier : mModifiersF) {
 			std::vector<bool> bools = {};
 			bool conditionsMet = false;
 			for (Condition condition : modifier->conditions) {
-				auto tempBool = CheckCondition(condition, caster);
-				logger::debug("Individual condition check was {}", tempBool);
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
 				bools.push_back(tempBool);
 			}
 			if (modifier->condOp == "or") {
-				logger::debug("The comparative operator was 'or'");
+				logger::trace("The comparative operator was 'or'");
 				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
 				if (boolIt != bools.end()) {
@@ -135,7 +125,7 @@ namespace Magnitude
 				}
 			}
 			if (modifier->condOp == "and") {
-				logger::debug("The comparative operator was 'and'");
+				logger::trace("The comparative operator was 'and'");
 				auto boolIt = std::find(bools.begin(), bools.end(), false);
 
 				if (boolIt != bools.end()) {
@@ -147,33 +137,33 @@ namespace Magnitude
 			if (conditionsMet) {
 				auto mult = function::evaluateExpression(modifier->function.function, function::AssignVariables(modifier->function.variables, caster));
 
-				auto it = GetCastInstance(caster);
-				auto currentCast = *it;
+				auto& currentCast = Cast::GetCastInstance(caster);
+
 				if (!currentCast.magnitude) {
-					currentCast.magnitude = new AlteredMagnitude();
+					currentCast.magnitude = std::make_unique<AlteredMagnitude>();
 				}
+
 				currentCast.magnitude->modifiers.push_back(mult);
-				*it = currentCast;
-				logger::debug("Conditions were met; a function modifier of {} added", mult);
+				logger::debug("Conditions were met; a mag function modifier of {} added", mult);
 			} else {
-				logger::debug("Conditions were not met; no function modifier added");
+				logger::debug("Conditions were not met; no mag function modifier added");
 			}
 		}
 	}
 
 	void AddMagMultipliersOnCast(RE::MagicCaster* caster)
 	{
-		logger::debug("Going through {} multipliers", mMultipliers.size());
+		logger::debug("Going through {} mag multipliers", mMultipliers.size());
 		for (Multiplier* multiplier : mMultipliers) {
 			std::vector<bool> bools = {};
 			bool conditionsMet = false;
 			for (Condition condition : multiplier->conditions) {
-				auto tempBool = CheckCondition(condition, caster);
-				logger::debug("Individual condition check was {}", tempBool);
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
 				bools.push_back(tempBool);
 			}
 			if (multiplier->condOp == "or") {
-				logger::debug("The comparative operator was 'or'");
+				logger::trace("The comparative operator was 'or'");
 				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
 				if (boolIt != bools.end()) {
@@ -183,7 +173,7 @@ namespace Magnitude
 				}
 			}
 			if (multiplier->condOp == "and") {
-				logger::debug("The comparative operator was 'and'");
+				logger::trace("The comparative operator was 'and'");
 				auto boolIt = std::find(bools.begin(), bools.end(), false);
 
 				if (boolIt != bools.end()) {
@@ -193,29 +183,30 @@ namespace Magnitude
 				}
 			}
 			if (conditionsMet) {
-				auto it = GetCastInstance(caster);
-				auto currentCast = *it;
+				auto& currentCast = Cast::GetCastInstance(caster);
+
 				if (!currentCast.magnitude) {
-					currentCast.magnitude = new AlteredMagnitude();
+					currentCast.magnitude = std::make_unique<AlteredMagnitude>();
 				}
+
 				currentCast.magnitude->multipliers.push_back(multiplier->value);
-				*it = currentCast;
-				logger::debug("Conditions were met; a multiplier of {} added", multiplier->value);
+				logger::debug("Conditions were met; a mag multiplier of {} added", multiplier->value);
 			} else {
-				logger::debug("Conditions were not met; no multiplier added");
+				logger::debug("Conditions were not met; no mag multiplier added");
 			}
 		}
-		logger::debug("Going through {} function multipliers", mMultipliersF.size());
+
+		logger::debug("Going through {} mag function multipliers", mMultipliersF.size());
 		for (MultiplierF* multiplier : mMultipliersF) {
 			std::vector<bool> bools = {};
 			bool conditionsMet = false;
 			for (Condition condition : multiplier->conditions) {
-				auto tempBool = CheckCondition(condition, caster);
-				logger::debug("Individual condition check was {}", tempBool);
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
 				bools.push_back(tempBool);
 			}
 			if (multiplier->condOp == "or") {
-				logger::debug("The comparative operator was 'or'");
+				logger::trace("The comparative operator was 'or'");
 				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
 				if (boolIt != bools.end()) {
@@ -225,7 +216,7 @@ namespace Magnitude
 				}
 			}
 			if (multiplier->condOp == "and") {
-				logger::debug("The comparative operator was 'and'");
+				logger::trace("The comparative operator was 'and'");
 				auto boolIt = std::find(bools.begin(), bools.end(), false);
 
 				if (boolIt != bools.end()) {
@@ -237,33 +228,33 @@ namespace Magnitude
 			if (conditionsMet) {
 				auto mult = function::evaluateExpression(multiplier->function.function, function::AssignVariables(multiplier->function.variables, caster));
 
-				auto it = GetCastInstance(caster);
-				auto currentCast = *it;
+				auto& currentCast = Cast::GetCastInstance(caster);
+
 				if (!currentCast.magnitude) {
-					currentCast.magnitude = new AlteredMagnitude();
+					currentCast.magnitude = std::make_unique<AlteredMagnitude>();
 				}
+
 				currentCast.magnitude->multipliers.push_back(mult);
-				*it = currentCast;
-				logger::debug("Conditions were met; a function multiplier of {} added", mult);
+				logger::debug("Conditions were met; a mag function multiplier of {} added", mult);
 			} else {
-				logger::debug("Conditions  were not met; no function multiplier added");
+				logger::debug("Conditions  were not met; no mag function multiplier added");
 			}
 		}
 	}
 
 	void AddMagOverridesOnCast(RE::MagicCaster* caster)
 	{
-		logger::debug("Going through {} overrides", mOverrides.size());
+		logger::debug("Going through {} mag overrides", mOverrides.size());
 		for (auto override : mOverrides) {
 			std::vector<bool> bools = {};
 			bool conditionsMet = false;
 			for (Condition condition : override->conditions) {
-				auto tempBool = CheckCondition(condition, caster);
-				logger::debug("Individual condition check was {}", tempBool);
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
 				bools.push_back(tempBool);
 			}
 			if (override->condOp == "or") {
-				logger::debug("The comparative operator was 'or'");
+				logger::trace("The comparative operator was 'or'");
 				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
 				if (boolIt != bools.end()) {
@@ -273,7 +264,7 @@ namespace Magnitude
 				}
 			}
 			if (override->condOp == "and") {
-				logger::debug("The comparative operator was 'and'");
+				logger::trace("The comparative operator was 'and'");
 				auto boolIt = std::find(bools.begin(), bools.end(), false);
 
 				if (boolIt != bools.end()) {
@@ -283,20 +274,21 @@ namespace Magnitude
 				}
 			}
 			if (conditionsMet) {
-				auto it = GetCastInstance(caster);
-				auto currentCast = *it;
+				auto& currentCast = Cast::GetCastInstance(caster);
+
 				if (!currentCast.magnitude) {
-					currentCast.magnitude = new AlteredMagnitude();
+					currentCast.magnitude = std::make_unique<AlteredMagnitude>();
 				}
+
 				currentCast.magnitude->overrideValue = override->value;
 				currentCast.magnitude->override = override->override;
 				currentCast.magnitude->excluded = override->excluded;
-				*it = currentCast;
+
 				if (currentCast.magnitude->override) {
 					if (currentCast.magnitude->excluded) {
-						logger::debug("Conditions were met; override of {} set and exclusion set to {}", currentCast.magnitude->overrideValue, currentCast.magnitude->excluded);
+						logger::debug("Conditions were met; mag override of {} set and exclusion set to {}", currentCast.magnitude->overrideValue, currentCast.magnitude->excluded);
 					} else {
-						logger::debug("Conditions were met; override of {} set.", currentCast.magnitude->overrideValue);
+						logger::debug("Conditions were met; mag override of {} set.", currentCast.magnitude->overrideValue);
 					}
 				} else {
 					if (currentCast.magnitude->excluded) {
@@ -304,7 +296,298 @@ namespace Magnitude
 					}
 				}
 			} else {
-				logger::debug("Conditions were not met; no override set");
+				logger::debug("Conditions were not met; no mag override set");
+			}
+		}
+	}
+
+	//Duration
+
+	float CalculateNewDur(float origin, AlteredDuration* duration)
+	{
+		float newDur;
+
+		auto override = duration->override;
+		auto excluded = duration->excluded;
+
+		if (duration->newBaseDur >= 0) {
+			newDur = duration->newBaseDur;
+			logger::debug("Base duration set to {}", newDur);
+		} else {
+			logger::debug("Base duration was less than 0; setting to origin ({}).", origin);
+			newDur = origin;
+			duration->newBaseDur = origin;
+		}
+
+		if (excluded) {
+			if (override) {
+				newDur = duration->overrideValue;
+				logger::info("Exclusion detected and override detected; returning override value of {}", newDur);
+				return newDur;
+			} else {
+				logger::info("Exclusion detected, returning original duration of {}", origin);  //this is giving a weird value
+				return origin;
+			}
+		} else {
+			logger::debug("No exclusion was detected.");
+			if (override) {
+				newDur = duration->overrideValue;
+				logger::debug("Override detected; base duration set to {}. This may be further modified.", newDur);
+			}
+		}
+
+		for (auto multiplier : duration->multipliers) {
+			newDur = newDur * multiplier;
+			logger::debug("duration multiplied by {}", multiplier);
+		}
+
+		for (auto modifier : duration->modifiers) {
+			newDur = newDur + modifier;
+			logger::debug("duration modified by {}", modifier);
+		}
+
+		logger::debug("New duration is {}", newDur);
+		duration->updatedDur = newDur;
+
+		return newDur;
+	}
+
+	void AddDurModifiersOnCast(RE::MagicCaster* caster)
+	{
+		logger::debug("Going through {} duration modifiers", dModifiers.size());
+		for (Modifier* modifier : dModifiers) {
+			std::vector<bool> bools = {};
+			bool conditionsMet = false;
+			for (Condition condition : modifier->conditions) {
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
+				bools.push_back(tempBool);
+			}
+			if (modifier->condOp == "or") {
+				logger::trace("The comparative operator was 'or'");
+				auto boolIt = std::find(bools.begin(), bools.end(), true);
+
+				if (boolIt != bools.end()) {
+					conditionsMet = true;
+				} else {
+					conditionsMet = false;
+				}
+			}
+			if (modifier->condOp == "and") {
+				logger::trace("The comparative operator was 'and'");
+				auto boolIt = std::find(bools.begin(), bools.end(), false);
+
+				if (boolIt != bools.end()) {
+					conditionsMet = false;
+				} else {
+					conditionsMet = true;
+				}
+			}
+			if (conditionsMet) {
+				auto& currentCast = Cast::GetCastInstance(caster);
+
+				if (!currentCast.duration) {
+					currentCast.duration = std::make_unique<AlteredDuration>();
+				}
+
+				currentCast.duration->modifiers.push_back(modifier->value);
+				logger::debug("Conditions were met; a duration modifier of {} added", modifier->value);
+			} else {
+				logger::debug("Conditions were not met; no duration modifier added");
+			}
+		}
+		logger::debug("Going through {} duration function modifiers", dModifiersF.size());
+		for (ModifierF* modifier : dModifiersF) {
+			std::vector<bool> bools = {};
+			bool conditionsMet = false;
+			for (Condition condition : modifier->conditions) {
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
+				bools.push_back(tempBool);
+			}
+			if (modifier->condOp == "or") {
+				logger::trace("The comparative operator was 'or'");
+				auto boolIt = std::find(bools.begin(), bools.end(), true);
+
+				if (boolIt != bools.end()) {
+					conditionsMet = true;
+				} else {
+					conditionsMet = false;
+				}
+			}
+			if (modifier->condOp == "and") {
+				logger::trace("The comparative operator was 'and'");
+				auto boolIt = std::find(bools.begin(), bools.end(), false);
+
+				if (boolIt != bools.end()) {
+					conditionsMet = false;
+				} else {
+					conditionsMet = true;
+				}
+			}
+			if (conditionsMet) {
+				auto mult = function::evaluateExpression(modifier->function.function, function::AssignVariables(modifier->function.variables, caster));
+
+				auto& currentCast = Cast::GetCastInstance(caster);
+
+				if (!currentCast.duration) {
+					currentCast.duration = std::make_unique<AlteredDuration>();
+				}
+
+				currentCast.duration->modifiers.push_back(mult);
+				logger::debug("Conditions were met; a duration function modifier of {} added", mult);
+			} else {
+				logger::debug("Conditions were not met; no duration function modifier added");
+			}
+		}
+	}
+
+	void AddDurMultipliersOnCast(RE::MagicCaster* caster)
+	{
+		logger::debug("Going through {} duration multipliers", dMultipliers.size());
+		for (Multiplier* multiplier : dMultipliers) {
+			std::vector<bool> bools = {};
+			bool conditionsMet = false;
+			for (Condition condition : multiplier->conditions) {
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
+				bools.push_back(tempBool);
+			}
+			if (multiplier->condOp == "or") {
+				logger::trace("The comparative operator was 'or'");
+				auto boolIt = std::find(bools.begin(), bools.end(), true);
+
+				if (boolIt != bools.end()) {
+					conditionsMet = true;
+				} else {
+					conditionsMet = false;
+				}
+			}
+			if (multiplier->condOp == "and") {
+				logger::trace("The comparative operator was 'and'");
+				auto boolIt = std::find(bools.begin(), bools.end(), false);
+
+				if (boolIt != bools.end()) {
+					conditionsMet = false;
+				} else {
+					conditionsMet = true;
+				}
+			}
+			if (conditionsMet) {
+				auto& currentCast = Cast::GetCastInstance(caster);
+
+				if (!currentCast.duration) {
+					currentCast.duration = std::make_unique<AlteredDuration>();
+				}
+
+				currentCast.duration->multipliers.push_back(multiplier->value);
+				logger::debug("Conditions were met; a duration multiplier of {} added", multiplier->value);
+			} else {
+				logger::debug("Conditions were not met; no duration multiplier added");
+			}
+		}
+
+		logger::debug("Going through {} duration function multipliers", dMultipliersF.size());
+		for (MultiplierF* multiplier : dMultipliersF) {
+			std::vector<bool> bools = {};
+			bool conditionsMet = false;
+			for (Condition condition : multiplier->conditions) {
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
+				bools.push_back(tempBool);
+			}
+			if (multiplier->condOp == "or") {
+				logger::trace("The comparative operator was 'or'");
+				auto boolIt = std::find(bools.begin(), bools.end(), true);
+
+				if (boolIt != bools.end()) {
+					conditionsMet = true;
+				} else {
+					conditionsMet = false;
+				}
+			}
+			if (multiplier->condOp == "and") {
+				logger::trace("The comparative operator was 'and'");
+				auto boolIt = std::find(bools.begin(), bools.end(), false);
+
+				if (boolIt != bools.end()) {
+					conditionsMet = false;
+				} else {
+					conditionsMet = true;
+				}
+			}
+			if (conditionsMet) {
+				auto mult = function::evaluateExpression(multiplier->function.function, function::AssignVariables(multiplier->function.variables, caster));
+
+				auto& currentCast = Cast::GetCastInstance(caster);
+
+				if (!currentCast.duration) {
+					currentCast.duration = std::make_unique<AlteredDuration>();
+				}
+
+				currentCast.duration->multipliers.push_back(mult);
+				logger::debug("Conditions were met; a duration function multiplier of {} added", mult);
+			} else {
+				logger::debug("Conditions  were not met; no duration function multiplier added");
+			}
+		}
+	}
+
+	void AddDurOverridesOnCast(RE::MagicCaster* caster)
+	{
+		logger::debug("Going through {} duration overrides", dOverrides.size());
+		for (auto override : dOverrides) {
+			std::vector<bool> bools = {};
+			bool conditionsMet = false;
+			for (Condition condition : override->conditions) {
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
+				bools.push_back(tempBool);
+			}
+			if (override->condOp == "or") {
+				logger::trace("The comparative operator was 'or'");
+				auto boolIt = std::find(bools.begin(), bools.end(), true);
+
+				if (boolIt != bools.end()) {
+					conditionsMet = true;
+				} else {
+					conditionsMet = false;
+				}
+			}
+			if (override->condOp == "and") {
+				logger::trace("The comparative operator was 'and'");
+				auto boolIt = std::find(bools.begin(), bools.end(), false);
+
+				if (boolIt != bools.end()) {
+					conditionsMet = false;
+				} else {
+					conditionsMet = true;
+				}
+			}
+			if (conditionsMet) {
+				auto& currentCast = Cast::GetCastInstance(caster);
+
+				if (!currentCast.duration) {
+					currentCast.duration = std::make_unique<AlteredDuration>();
+				}
+
+				currentCast.duration->overrideValue = override->value;
+				currentCast.duration->override = override->override;
+				currentCast.duration->excluded = override->excluded;
+
+				if (currentCast.duration->override) {
+					if (currentCast.duration->excluded) {
+						logger::debug("Conditions were met; duration override of {} set and exclusion set to {}", currentCast.duration->overrideValue, currentCast.duration->excluded);
+					} else {
+						logger::debug("Conditions were met; duration override of {} set.", currentCast.duration->overrideValue);
+					}
+				} else {
+					if (currentCast.duration->excluded) {
+						logger::debug("Conditions were met; Exclusion set to {}", currentCast.duration->excluded);
+					}
+				}
+			} else {
+				logger::debug("Conditions were not met; no duration override set");
 			}
 		}
 	}

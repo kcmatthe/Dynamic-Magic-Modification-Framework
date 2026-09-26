@@ -18,9 +18,10 @@ namespace Settings
 
 			//Other Settings
 			ReadIntSetting(mcm, "Settings", "iLogLevel", iLogLevel);
-			
-
-
+			ReadBoolSetting(mcm, "Settings", "bReplaceVFX", bReplaceVFX);
+			ReadBoolSetting(mcm, "Settings", "bAllowUnmatchedCastType", bAllowUnmatchedCastType);
+			ReadBoolSetting(mcm, "Settings", "bAllowUnmatchedDeliveryType", bAllowUnmatchedDeliveryType);
+			ReadBoolSetting(mcm, "Settings", "bCanDieFromCastingWithHealth", bCanDieFromCastingWithHealth);
 		};
 		logger::info("Reading MCM .ini...");
 
@@ -29,8 +30,6 @@ namespace Settings
 
 		logger::info("...success");
 		Log::UpdateLogLevel(Settings::iLogLevel);
-
-		//DirectionalMovementHandler::GetSingleton()->OnSettingsUpdated(); //this doesn't seem necessary for this mod
 
 	}
 

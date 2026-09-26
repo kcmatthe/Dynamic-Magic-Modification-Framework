@@ -13,6 +13,63 @@
 
 namespace Utility
 {
+	namespace RayCast
+	{
+		//adapted from SkyParkour
+		//This may not work anymore...
+		RayCastResult RayCast(RE::NiPoint3 rayStart, RE::NiPoint3 rayDir, float maxDist, RE::Actor* actor) 
+		{
+			RayCastResult result{};
+			result.distance = maxDist;
+
+			if (!actor) {
+				return result;
+			}
+			const auto& cell = actor->GetParentCell();
+			if (!cell) {
+				return result;
+			}
+			const auto& bhkWorld = cell->GetbhkWorld();
+			if (!bhkWorld) {
+				return result;
+			}
+
+			RE::bhkPickData pickData;
+			const auto& havokWorldScale = RE::bhkWorld::GetWorldScale();
+
+			//this probably should be called elsewhere and used as the arguments or have a separate version just for player los, but again I am lazy and wanted to just see if this would work
+			auto pc = RE::PlayerCamera::GetSingleton();
+			RE::NiNode* camRoot = pc->cameraRoot.get();  // NiPointer<NiNode>
+			rayStart = pc->GetRuntimeData2().pos;
+			rayDir = camRoot->world.rotate * RE::NiPoint3{ 0.0f, 1.0f, 0.0f };
+
+			// Set ray start and end points (scaled to Havok world)
+			pickData.rayInput.from = rayStart * havokWorldScale;
+			pickData.rayInput.to = (rayStart + rayDir * maxDist) * havokWorldScale;
+
+			// Set the collision filter info to exclude the player
+
+			RE::CFilter collisionFilterInfo;
+			
+			actor->GetCollisionFilterInfo(collisionFilterInfo);
+			
+			pickData.rayInput.filterInfo = collisionFilterInfo;
+			
+			// Perform the raycast
+			if (bhkWorld->PickObject(pickData) && pickData.rayOutput.HasHit()) {
+				result.didHit = true;
+				result.distance = maxDist * pickData.rayOutput.hitFraction;
+				result.normalOut = pickData.rayOutput.normal;
+
+				result.layer = pickData.rayOutput.rootCollidable->GetCollisionLayer();
+
+				result.hitObjectRef = RE::TESHavokUtilities::FindCollidableRef(*pickData.rayOutput.rootCollidable);
+			}
+
+			return result;
+		}
+
+	}
 	namespace Format
 	{
 		/* template <class... Arguments>
@@ -162,14 +219,14 @@ namespace Utility
 			return "fail";
 		}
 
-		bool compareEditorID(RE::SpellItem* a, RE::SpellItem* b)
+		bool compareEditorID(RE::TESForm* a, RE::TESForm* b)
 		{
 			return GetEditorID(a->formID) < GetEditorID(b->formID);
 		}
 
 		void TogglePlayerControls(bool a_enable)
 		{
-			RE::ControlMap::GetSingleton()->ToggleControls(controlFlags, a_enable);
+			RE::ControlMap::GetSingleton()->ToggleControls(controlFlags, a_enable, false);
 
 			if (const auto pcControls = RE::PlayerControls::GetSingleton()) {
 				pcControls->readyWeaponHandler->SetInputEventHandlingEnabled(a_enable);
@@ -191,9 +248,29 @@ namespace Utility
 			global->value = value;
 		}
 
-		//From DbSkseFunctions (Dylbill)
+		bool IsEffectActive(RE::Actor* a_actor, RE::EffectSetting* a_effect)
+		{
+			if (!a_actor || !a_effect) {
+				return false;
+			}
+			auto activeEffects = a_actor->GetActiveEffectList();
+			RE::EffectSetting* setting = nullptr;
+			if (!activeEffects->empty()) {
+				for (RE::ActiveEffect* effect : *activeEffects) {
+					if (effect; !effect->flags.any(RE::ActiveEffect::Flag::kInactive)) {
+						setting = effect ? effect->GetBaseObject() : nullptr;
+						if (setting) {
+							if (setting == a_effect) {
+								return true;
+							}
+						}
+					}
+				}
+			}
+			return false;
+		}
 
-		
+		//From DbSkseFunctions (Dylbill)
 
 		RE::BSFixedString GetFormName(RE::TESForm* akForm)
 		{

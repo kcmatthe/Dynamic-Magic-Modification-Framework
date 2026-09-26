@@ -10,6 +10,35 @@
 
 namespace Utility
 {
+	namespace RayCast
+	{
+		struct RayCastResult
+		{
+			float distance = -1.0f;
+			RE::COL_LAYER layer = RE::COL_LAYER::kUnidentified;
+			RE::hkVector4 normalOut = RE::hkVector4(0, 0, 0, 0);
+			bool didHit = false;
+
+			// Do a null check before using this
+			RE::TESObjectREFR* hitObjectRef = nullptr;
+
+			RE::FormType GetHitObjectFormType_Safe() const
+			{
+				if (!hitObjectRef)
+					return RE::FormType::None;
+				return hitObjectRef->GetObjectReference()->GetFormType();
+			}
+
+			RayCastResult() = default;
+
+			RayCastResult(float d, RE::COL_LAYER l, const RE::hkVector4& n, bool h, RE::TESObjectREFR* r) :
+				distance(d), layer(l), normalOut(n), didHit(h), hitObjectRef(r) {}
+		};
+
+		 RayCastResult RayCast(RE::NiPoint3 rayStart, RE::NiPoint3 rayDir, float maxDist,
+			RE::Actor* actor);
+
+	}
 	namespace Format
 	{
 		template <class... Arguments>
@@ -78,7 +107,7 @@ namespace Utility
 		inline std::string GetEditorID(const RE::FormID formID);
 
 		//My skyrim functions
-		bool compareEditorID(RE::SpellItem* a, RE::SpellItem* b);
+		bool compareEditorID(RE::TESForm* a, RE::TESForm* b);
 
 		template <typename T>
 		T* GetFormFromEditorID(std::string id)
@@ -145,6 +174,8 @@ namespace Utility
 		void ModGlobal(RE::TESGlobal* global, float value);
 
 		void SetGlobal(RE::TESGlobal* global, float value);
+
+		bool IsEffectActive(RE::Actor* a_actor, RE::EffectSetting* a_effect);
 
 		//From Dylbill
 		RE::BSFixedString GetFormName(RE::TESForm* akForm);

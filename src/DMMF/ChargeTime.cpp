@@ -1,7 +1,10 @@
 #include "Settings/Config.h"
+#include "Settings/Conditions.h"
 #include "Utility/Function.h"
+#include "Utility/Utility.h"
 #include "AlteredCast.h"
 #include "ChargeTime.h"
+#include "PluginData.h"
 
 
 namespace ChargeTime
@@ -9,98 +12,124 @@ namespace ChargeTime
 	using namespace config;
 	using namespace Cast;
 	using namespace Conditions;
+	using namespace PluginData;
+	
 
-	//also should look into a way that perks / enchantments can alter charge time - might be best to set up a casting time actor value - reimpliment ActorValueGenerator or just make an AV using AVG
+	void EvaluateMultMagicEffects(RE::MagicCaster* caster) {
+		if (!caster) {
+			return;
+		}
+		auto spell = caster->currentSpell;
+		if (!spell) {
+			return;
+		}
 
-	//could add options for other items being equipped (staff, one handed weapon, etc.)
+		auto actor = caster->GetCasterAsActor();
+		
+		if (!actor) {
+			return;
+		}
 
-	void CalculateNewChargeTime(RE::MagicCaster* caster, float origin, bool log) {
+		auto& activeEffects = *actor->AsMagicTarget()->GetActiveEffectList();
+
+		if (!&activeEffects) {
+			return;
+		}
+		auto& currentCast = Cast::GetCastInstance(caster);
+
+		if (!currentCast.charge) {
+			currentCast.charge = std::make_unique<AlteredCharge>();
+		}
+
+		for (auto& activeEffect : activeEffects) {
+			if (!activeEffect) {
+				continue;
+			}
+
+			if (activeEffect->effect->baseEffect->HasKeyword(PositiveCastTimeMultKYWD)) {
+				auto effectMult = 1 - (activeEffect->magnitude / 100);
+				currentCast.charge->multipliers.push_back(effectMult);
+				logger::debug("CastingTimeMult effect active; pushing back mult of {}", effectMult);
+			}
+			if (activeEffect->effect->baseEffect->HasKeyword(NegativeCastTimeMultKYWD)) {
+				auto effectMult = 1 + (activeEffect->magnitude / 100);
+				currentCast.charge->multipliers.push_back(effectMult);
+				logger::debug("CastingTimeMult effect active; pushing back mult of {}", effectMult);
+			}
+
+			/* if (activeEffect->effect->baseEffect == castingTimeMult) {
+				auto effectMult = 1 - (activeEffect->magnitude / 100);
+				currentCast.charge->multipliers.push_back(effectMult);
+				logger::debug("CastingTimeMult effect active; pushing back mult of {}", effectMult);
+			}
+			if (activeEffect->effect->baseEffect == castingTimeMultConst) {
+				auto effectMult = 1 - (activeEffect->magnitude / 100);
+				currentCast.charge->multipliers.push_back(effectMult);
+				logger::debug("CastingTimeMultConst effect active; pushing back mult of {}", effectMult);
+			}*/
+		}
+
+	}
+
+	void CalculateNewChargeTime(RE::MagicCaster* caster, float origin) {
 
 		RE::MagicItem* spell = (caster->currentSpell);
 
-		auto it = GetCastInstance(caster);
-		auto currentCast = *it;
+		auto& currentCast = Cast::GetCastInstance(caster);
+
 		if (!currentCast.charge) {
-			currentCast.charge = new AlteredCharge();
+			currentCast.charge = std::make_unique<AlteredCharge>();
 		}
 
-		auto charge = currentCast.charge;
+		auto charge = currentCast.charge.get();
 		auto override = charge->override;
 		auto excluded = charge->excluded;
 
-		if (spell) {
-			auto type = spell->GetSpellType();
-			auto casting = spell->GetCastingType();
-			float newTime = origin;
-
-			if (charge->newBaseTime >= 0) {
-				newTime = charge->newBaseTime;
-				if (log) {
-					logger::debug("Base time set to {}", newTime);
-				}
-			} else {
-				if (log) {
-					logger::debug("Base time was less than 0; setting to origin.");
-				}
-				newTime = origin;
-			}
-
-			
-
-			if (excluded) {
-				if (override) {
-					newTime = charge->overrideValue;
-					if (log) {
-						logger::info("Exclusion detected and override detected; returning override value of {}", newTime);
-					}
-					currentCast.charge->updatedTime = newTime;
-					//return newTime;
-				} else {
-					if (log) {
-						logger::info("Exclusion detected, returning original charge time of {}", origin);  
-					}
-					currentCast.charge->updatedTime = origin;
-					//return origin;
-				}
-			} else {
-				if (log) {
-					logger::debug("No exclusion was detected.");
-				}
-				if (override) {
-					newTime = charge->overrideValue;
-					if (log) {
-						logger::debug("Override detected; base time set to {}. This may be further modified.", newTime);
-					}
-				}
-			}
-
-			for (auto multiplier : charge->multipliers) {
-				newTime = newTime * multiplier;
-				if (log) {
-					logger::debug("Charge time multiplied by {}", multiplier);
-				}
-			}
-			
-
-			for (auto modifier : charge->modifiers) {
-				newTime = newTime + modifier;
-				if (log) {
-					logger::debug("Charge time modified by {}", modifier);
-				}
-			}
-			
-			if (log) {
-			//	logger::info("New charge time is {} seconds", newTime);
-			}
-			currentCast.charge->updatedTime = newTime;
-			//return newTime;
-		} else {
+		if (!spell) {
 			logger::warn("Not a valid spell");
 			currentCast.charge->updatedTime = origin;
-			//return origin;
 		}
 
-		*it = currentCast;
+		auto type = spell->GetSpellType();
+		auto casting = spell->GetCastingType();
+		float newTime = origin;
+
+		if (charge->newBaseTime >= 0) {
+			newTime = charge->newBaseTime;
+			logger::debug("Base time set to {}", newTime);
+		} else {
+			logger::debug("Base time was less than 0; setting to origin.");
+			newTime = origin;
+		}
+
+		if (excluded) {
+			if (override) {
+				newTime = charge->overrideValue;
+				logger::debug("Exclusion detected and override detected; returning override value of {}", newTime);
+				currentCast.charge->updatedTime = newTime;
+			} else {
+				logger::debug("Exclusion detected, returning original charge time of {}", origin);  
+				currentCast.charge->updatedTime = origin;
+			}
+		} else {
+			logger::debug("No exclusion was detected.");
+			if (override) {
+				newTime = charge->overrideValue;
+				logger::debug("Override detected; base time set to {}. This may be further modified.", newTime);
+			}
+		}
+
+		for (auto multiplier : charge->multipliers) {
+			newTime = newTime * multiplier;
+			logger::debug("Charge time multiplied by {}", multiplier);
+		}
+			
+		for (auto modifier : charge->modifiers) {
+			newTime = newTime + modifier;
+			logger::debug("Charge time modified by {}", modifier);
+		}
+			
+		currentCast.charge->updatedTime = newTime;
 	}
 	
 	void AddChargeModifiersOnCast(RE::MagicCaster* caster) 
@@ -110,12 +139,12 @@ namespace ChargeTime
 			std::vector<bool> bools = {};
 			bool conditionsMet = false;
 			for (Condition condition : modifier->conditions) {
-				auto tempBool = CheckCondition(condition, caster);
-				logger::debug("Individual condition check was {}", tempBool);
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
 				bools.push_back(tempBool);
 			}
 			if (modifier->condOp == "or") {
-				logger::debug("The comparative operator was 'or'");
+				logger::trace("The comparative operator was 'or'");
 				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
 				if (boolIt != bools.end()) {
@@ -125,7 +154,7 @@ namespace ChargeTime
 				}
 			}
 			if (modifier->condOp == "and") {
-				logger::debug("The comparative operator was 'and'");
+				logger::trace("The comparative operator was 'and'");
 				auto boolIt = std::find(bools.begin(), bools.end(), false);
 
 				if (boolIt != bools.end()) {
@@ -135,13 +164,13 @@ namespace ChargeTime
 				}
 			}
 			if (conditionsMet) {
-				auto it = GetCastInstance(caster);
-				auto currentCast = *it;
+				auto& currentCast = Cast::GetCastInstance(caster);
+
 				if (!currentCast.charge) {
-					currentCast.charge = new AlteredCharge();
+					currentCast.charge = std::make_unique<AlteredCharge>();
 				}
 				currentCast.charge->modifiers.push_back(modifier->value);
-				*it = currentCast;
+
 				logger::debug("Conditions were met; a charge time modifier of {} added", modifier->value);
 			} else {
 				logger::debug("Conditions were not met; no charge time modifier added");
@@ -152,12 +181,12 @@ namespace ChargeTime
 			std::vector<bool> bools = {};
 			bool conditionsMet = false;
 			for (Condition condition : modifier->conditions) {
-				auto tempBool = CheckCondition(condition, caster);
-				logger::debug("Individual condition check was {}", tempBool);
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
 				bools.push_back(tempBool);
 			}
 			if (modifier->condOp == "or") {
-				logger::debug("The comparative operator was 'or'");
+				logger::trace("The comparative operator was 'or'");
 				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
 				if (boolIt != bools.end()) {
@@ -167,7 +196,7 @@ namespace ChargeTime
 				}
 			}
 			if (modifier->condOp == "and") {
-				logger::debug("The comparative operator was 'and'");
+				logger::trace("The comparative operator was 'and'");
 				auto boolIt = std::find(bools.begin(), bools.end(), false);
 
 				if (boolIt != bools.end()) {
@@ -179,13 +208,13 @@ namespace ChargeTime
 			if (conditionsMet) {
 				auto mult = function::evaluateExpression(modifier->function.function, function::AssignVariables(modifier->function.variables, caster));
 
-				auto it = GetCastInstance(caster);
-				auto currentCast = *it;
+				auto& currentCast = Cast::GetCastInstance(caster);
+
 				if (!currentCast.charge) {
-					currentCast.charge = new AlteredCharge();
+					currentCast.charge = std::make_unique<AlteredCharge>();
 				}
 				currentCast.charge->modifiers.push_back(mult);
-				*it = currentCast;
+
 				logger::debug("Conditions were met; a charge time function modifier of {} added", mult);
 			} else {
 				logger::debug("Conditions were not met; no charge time function modifier added");
@@ -201,12 +230,12 @@ namespace ChargeTime
 			std::vector<bool> bools = {};
 			bool conditionsMet = false;
 			for (Condition condition : multiplier->conditions) {
-				auto tempBool = CheckCondition(condition, caster);  
-				logger::debug("Individual condition check was {}", tempBool);
+				auto tempBool = EvaluateCondition(condition, caster);  
+				logger::trace("Individual condition check was {}", tempBool);
 				bools.push_back(tempBool);
 			}
 			if (multiplier->condOp == "or") {
-				logger::debug("The comparative operator was 'or'");
+				logger::trace("The comparative operator was 'or'");
 				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
 				if (boolIt != bools.end()) {
@@ -216,7 +245,7 @@ namespace ChargeTime
 				}
 			}
 			if (multiplier->condOp == "and") {
-				logger::debug("The comparative operator was 'and'");
+				logger::trace("The comparative operator was 'and'");
 				auto boolIt = std::find(bools.begin(), bools.end(), false);
 
 				if (boolIt != bools.end()) {
@@ -226,13 +255,13 @@ namespace ChargeTime
 				}
 			}
 			if (conditionsMet) {
-				auto it = GetCastInstance(caster);
-				auto currentCast = *it;
+				auto& currentCast = Cast::GetCastInstance(caster);
+
 				if (!currentCast.charge) {
-					currentCast.charge = new AlteredCharge();
+					currentCast.charge = std::make_unique<AlteredCharge>();
 				}
 				currentCast.charge->multipliers.push_back(multiplier->value);
-				*it = currentCast;
+
 				logger::debug("Conditions were met; a charge time multiplier of {} added", multiplier->value);
 			} else {
 				logger::debug("Conditions were not met; no charge time multiplier added");
@@ -243,12 +272,12 @@ namespace ChargeTime
 			std::vector<bool> bools = {};
 			bool conditionsMet = false;
 			for (Condition condition : multiplier->conditions) {
-				auto tempBool = CheckCondition(condition, caster);  
-				logger::debug("Individual condition check was {}", tempBool);
+				auto tempBool = EvaluateCondition(condition, caster);  
+				logger::trace("Individual condition check was {}", tempBool);
 				bools.push_back(tempBool);
 			}
 			if (multiplier->condOp == "or") {
-				logger::debug("The comparative operator was 'or'");
+				logger::trace("The comparative operator was 'or'");
 				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
 				if (boolIt != bools.end()) {
@@ -258,7 +287,7 @@ namespace ChargeTime
 				}
 			}
 			if (multiplier->condOp == "and") {
-				logger::debug("The comparative operator was 'and'");
+				logger::trace("The comparative operator was 'and'");
 				auto boolIt = std::find(bools.begin(), bools.end(), false);
 
 				if (boolIt != bools.end()) {
@@ -270,19 +299,20 @@ namespace ChargeTime
 			if (conditionsMet) {
 				auto mult = function::evaluateExpression(multiplier->function.function, function::AssignVariables(multiplier->function.variables, caster));
 
-				auto it = GetCastInstance(caster);
-				auto currentCast = *it;
+				auto& currentCast = Cast::GetCastInstance(caster);
+
 				if (!currentCast.charge) {
-					currentCast.charge = new AlteredCharge();
+					currentCast.charge = std::make_unique<AlteredCharge>();
 				}
 				currentCast.charge->multipliers.push_back(mult);
-				*it = currentCast;
+
 				logger::debug("Conditions were met; a charge time function multiplier of {} added", mult);
 			} else {
 				logger::debug("Conditions  were not met; no charge time function multiplier added");
 			}
 		}
-		
+		EvaluateMultMagicEffects(caster);
+
 	}
 
 	void AddChargeOverridesOnCast(RE::MagicCaster* caster) {
@@ -291,12 +321,12 @@ namespace ChargeTime
 			std::vector<bool> bools = {};
 			bool conditionsMet = false;
 			for (Condition condition : override->conditions) {
-				auto tempBool = CheckCondition(condition, caster);
-				logger::debug("Individual condition check was {}", tempBool);
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
 				bools.push_back(tempBool);
 			}
 			if (override->condOp == "or") {
-				logger::debug("The comparative operator was 'or'");
+				logger::trace("The comparative operator was 'or'");
 				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
 				if (boolIt != bools.end()) {
@@ -306,7 +336,7 @@ namespace ChargeTime
 				}
 			}
 			if (override->condOp == "and") {
-				logger::debug("The comparative operator was 'and'");
+				logger::trace("The comparative operator was 'and'");
 				auto boolIt = std::find(bools.begin(), bools.end(), false);
 
 				if (boolIt != bools.end()) {
@@ -316,15 +346,15 @@ namespace ChargeTime
 				}
 			}
 			if (conditionsMet) {
-				auto it = GetCastInstance(caster);
-				auto currentCast = *it;
+				auto& currentCast = Cast::GetCastInstance(caster);
+
 				if (!currentCast.charge) {
-					currentCast.charge = new AlteredCharge();
+					currentCast.charge = std::make_unique<AlteredCharge>();
 				}
 				currentCast.charge->overrideValue = override->value;
 				currentCast.charge->override = override->override;
 				currentCast.charge->excluded = override->excluded;
-				*it = currentCast;
+
 				if (currentCast.charge->override){
 					if (currentCast.charge->excluded) {
 						logger::debug("Conditions were met; charge time override of {} seconds set and exclusion set to {}", currentCast.charge->overrideValue, currentCast.charge->excluded);

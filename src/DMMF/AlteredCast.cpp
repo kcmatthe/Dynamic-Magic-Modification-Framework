@@ -2,25 +2,68 @@
 
 namespace Cast
 {
-	//Finds the correct instance so that when multiple actors are casting at the same time, multipliers and modifiers are only applied to the correct spells and correct casters
-	std::vector<AlteredCast>::iterator GetCastInstance(RE::MagicCaster* caster)
+	namespace
 	{
-		auto targetCast = [&caster](const AlteredCast& ac) {
-			return ac.caster == caster;
-		};
+		std::mutex castMutex;
+		std::unordered_map<RE::MagicCaster*, AlteredCast> casts;
+	}
 
-		auto it = std::find_if(casts.begin(), casts.end(), targetCast);
-
-		if (it != casts.end()) {
-			return it;
-		} else {
-			logger::debug("AlteredCast object did not exist for this cast instance; Creating new object.");
-			float n = caster->currentSpell->GetChargeTime();
-			
-			auto newCast = AlteredCast::AlteredCast(caster, nullptr, nullptr, nullptr);
-			casts.push_back(newCast);
-
-			return casts.end() - 1;
+	AlteredCast& GetCastInstance(RE::MagicCaster* caster)
+	{
+		if (!caster) {
+			logger::warn("GetCastInstance called with null caster ");
 		}
+
+		std::scoped_lock lock(castMutex);
+
+		auto it = casts.find(caster);
+		if (it != casts.end()) {
+			logger::trace("Found existing cast instance");
+			return it->second;
+		}
+
+		logger::debug("Creating AlteredCast for MagicCaster {:p}", static_cast<void*>(caster));
+		auto [insertedIt, inserted] = casts.emplace(caster, AlteredCast{ caster });
+		return insertedIt->second;
+	}
+
+	AlteredCast* FindCastInstance(RE::MagicCaster* caster)
+	{
+		if (!caster) {
+			return nullptr;
+		}
+
+		std::scoped_lock lock(castMutex);
+
+		auto it = casts.find(caster);
+		if (it == casts.end()) {
+			return nullptr;
+		}
+		return &it->second;
+	}
+
+	void ResetCastInstance(RE::MagicCaster* caster)
+	{
+		if (!caster) {
+			return;
+		}
+
+		std::scoped_lock lock(castMutex);
+
+		auto it = casts.find(caster);
+		if (it != casts.end()) {
+			it->second.ResetForNewCast();
+		}
+	}
+
+	void EraseCastInstance(RE::MagicCaster* caster)
+	{
+		if (!caster) {
+			return;
+		}
+
+		std::scoped_lock lock(castMutex);
+
+		casts.erase(caster);
 	}
 }

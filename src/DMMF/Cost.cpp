@@ -1,13 +1,16 @@
 #include "Settings/Config.h"
+#include "Settings/Conditions.h"
 #include "Utility/Function.h"
 #include "AlteredCast.h"
 #include "Cost.h"
+#include "PluginData.h"
 
 namespace Cost
 {
 	using namespace config;
 	using namespace Cast;
 	using namespace Conditions;
+	using namespace PluginData;
 
 	void CalculateNewCost(RE::MagicCaster* caster, bool log)
 	{
@@ -15,15 +18,15 @@ namespace Cost
 		float origin = caster->currentSpellCost;
 		float newCost = origin;
 
-		
-		auto it = GetCastInstance(caster);
-		auto currentCast = *it;
+		auto& currentCast = Cast::GetCastInstance(caster);
+
 		if (!currentCast.cost) {
-			currentCast.cost = new AlteredCost();
+			currentCast.cost = std::make_unique<AlteredCost>();
 		}
-		auto cost = currentCast.cost;
-		auto override = cost->override;
-		auto excluded = cost->excluded;
+
+		auto* cost = currentCast.cost.get();
+		bool override = cost->override;
+		bool excluded = cost->excluded;
 
 		if (spell) {
 			auto type = spell->GetSpellType();
@@ -93,7 +96,6 @@ namespace Cost
 			//return origin;
 			currentCast.cost->updatedCost = origin;
 		}
-		*it = currentCast;
 	}
 
 	void AddCostModifiersOnCast(RE::MagicCaster* caster)
@@ -103,12 +105,12 @@ namespace Cost
 			std::vector<bool> bools = {};
 			bool conditionsMet = false;
 			for (Condition condition : modifier->conditions) {
-				auto tempBool = CheckCondition(condition, caster);
-				logger::debug("Individual condition check was {}", tempBool);
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
 				bools.push_back(tempBool);
 			}
 			if (modifier->condOp == "or") {
-				logger::debug("The comparative operator was 'or'");
+				logger::trace("The comparative operator was 'or'");
 				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
 				if (boolIt != bools.end()) {
@@ -118,7 +120,7 @@ namespace Cost
 				}
 			}
 			if (modifier->condOp == "and") {
-				logger::debug("The comparative operator was 'and'");
+				logger::trace("The comparative operator was 'and'");
 				auto boolIt = std::find(bools.begin(), bools.end(), false);
 
 				if (boolIt != bools.end()) {
@@ -128,13 +130,13 @@ namespace Cost
 				}
 			}
 			if (conditionsMet) {
-				auto it = GetCastInstance(caster);
-				auto currentCast = *it;
+				auto& currentCast = Cast::GetCastInstance(caster);
+
 				if (!currentCast.cost) {
-					currentCast.cost = new AlteredCost();
+					currentCast.cost = std::make_unique<AlteredCost>();
 				}
 				currentCast.cost->modifiers.push_back(modifier->value);
-				*it = currentCast;
+
 				logger::debug("Conditions were met; a cost modifier of {} added", modifier->value);
 			} else {
 				logger::debug("Conditions were not met; no cost modifier added");
@@ -145,12 +147,12 @@ namespace Cost
 			std::vector<bool> bools = {};
 			bool conditionsMet = false;
 			for (Condition condition : modifier->conditions) {
-				auto tempBool = CheckCondition(condition, caster);
-				logger::debug("Individual condition check was {}", tempBool);
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
 				bools.push_back(tempBool);
 			}
 			if (modifier->condOp == "or") {
-				logger::debug("The comparative operator was 'or'");
+				logger::trace("The comparative operator was 'or'");
 				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
 				if (boolIt != bools.end()) {
@@ -160,7 +162,7 @@ namespace Cost
 				}
 			}
 			if (modifier->condOp == "and") {
-				logger::debug("The comparative operator was 'and'");
+				logger::trace("The comparative operator was 'and'");
 				auto boolIt = std::find(bools.begin(), bools.end(), false);
 
 				if (boolIt != bools.end()) {
@@ -172,16 +174,61 @@ namespace Cost
 			if (conditionsMet) {
 				auto mod = function::evaluateExpression(modifier->function.function, function::AssignVariables(modifier->function.variables, caster));
 
-				auto it = GetCastInstance(caster);
-				auto currentCast = *it;
+				auto& currentCast = Cast::GetCastInstance(caster);
+
 				if (!currentCast.cost) {
-					currentCast.cost = new AlteredCost();
+					currentCast.cost = std::make_unique<AlteredCost>();
 				}
 				currentCast.cost->modifiers.push_back(mod);
-				*it = currentCast;
+
 				logger::debug("Conditions were met; a cost function modifier of {} added", mod);
 			} else {
 				logger::debug("Conditions were not met; no cost function modifier added");
+			}
+		}
+	}
+
+	void EvaluateMultMagicEffects(RE::MagicCaster* caster)
+	{
+		if (!caster) {
+			return;
+		}
+		auto spell = caster->currentSpell;
+		if (!spell) {
+			return;
+		}
+
+		auto actor = caster->GetCasterAsActor();
+
+		if (!actor) {
+			return;
+		}
+
+		auto& activeEffects = *actor->AsMagicTarget()->GetActiveEffectList();
+
+		if (!&activeEffects) {
+			return;
+		}
+		auto& currentCast = Cast::GetCastInstance(caster);
+
+		if (!currentCast.cost) {
+			currentCast.cost = std::make_unique<AlteredCost>();
+		}
+
+		for (auto& activeEffect : activeEffects) {
+			if (!activeEffect) {
+				continue;
+			}
+
+			if (activeEffect->effect->baseEffect->HasKeyword(PositiveCostMultKYWD)) {
+				auto effectMult = 1 - (activeEffect->magnitude / 100);
+				currentCast.cost->multipliers.push_back(effectMult);
+				logger::debug("CostMult effect active; pushing back mult of {}", effectMult);
+			}
+			if (activeEffect->effect->baseEffect->HasKeyword(NegativeCostMultKYWD)) {
+				auto effectMult = 1 + (activeEffect->magnitude / 100);
+				currentCast.cost->multipliers.push_back(effectMult);
+				logger::debug("CostMult effect active; pushing back mult of {}", effectMult);
 			}
 		}
 	}
@@ -195,12 +242,12 @@ namespace Cost
 			std::vector<bool> bools = {};
 			bool conditionsMet = false;
 			for (Condition condition : multiplier->conditions) {
-				auto tempBool = CheckCondition(condition, caster);
-				logger::debug("Individual condition check was {}", tempBool);
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
 				bools.push_back(tempBool);
 			}
 			if (multiplier->condOp == "or") {
-				logger::debug("The comparative operator was 'or'");
+				logger::trace("The comparative operator was 'or'");
 				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
 				if (boolIt != bools.end()) {
@@ -210,7 +257,7 @@ namespace Cost
 				}
 			}
 			if (multiplier->condOp == "and") {
-				logger::debug("The comparative operator was 'and'");
+				logger::trace("The comparative operator was 'and'");
 				auto boolIt = std::find(bools.begin(), bools.end(), false);
 
 				if (boolIt != bools.end()) {
@@ -220,13 +267,13 @@ namespace Cost
 				}
 			}
 			if (conditionsMet) {
-				auto it = GetCastInstance(caster);
-				auto currentCast = *it;
+				auto& currentCast = Cast::GetCastInstance(caster);
+
 				if (!currentCast.cost) {
-					currentCast.cost = new AlteredCost();
+					currentCast.cost = std::make_unique<AlteredCost>();
 				}
 				currentCast.cost->multipliers.push_back(multiplier->value);
-				*it = currentCast;
+
 				logger::debug("Conditions were met; a cost multiplier of {} added", multiplier->value);
 			} else {
 				logger::debug("Conditions were not met; no cost multiplier added");
@@ -237,12 +284,12 @@ namespace Cost
 			std::vector<bool> bools = {};
 			bool conditionsMet = false;
 			for (Condition condition : multiplier->conditions) {
-				auto tempBool = CheckCondition(condition, caster);
-				logger::debug("Individual condition check was {}", tempBool);
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
 				bools.push_back(tempBool);
 			}
 			if (multiplier->condOp == "or") {
-				logger::debug("The comparative operator was 'or'");
+				logger::trace("The comparative operator was 'or'");
 				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
 				if (boolIt != bools.end()) {
@@ -252,7 +299,7 @@ namespace Cost
 				}
 			}
 			if (multiplier->condOp == "and") {
-				logger::debug("The comparative operator was 'and'");
+				logger::trace("The comparative operator was 'and'");
 				auto boolIt = std::find(bools.begin(), bools.end(), false);
 
 				if (boolIt != bools.end()) {
@@ -264,18 +311,20 @@ namespace Cost
 			if (conditionsMet) {
 				auto mult = function::evaluateExpression(multiplier->function.function, function::AssignVariables(multiplier->function.variables, caster));
 
-				auto it = GetCastInstance(caster);
-				auto currentCast = *it;
+				auto& currentCast = Cast::GetCastInstance(caster);
+
 				if (!currentCast.cost) {
-					currentCast.cost = new AlteredCost();
+					currentCast.cost = std::make_unique<AlteredCost>();
 				}
 				currentCast.cost->multipliers.push_back(mult);
-				*it = currentCast;
+
 				logger::debug("Conditions were met; a cost function multiplier of {} added", mult);
 			} else {
 				logger::debug("Conditions  were not met; no cost function multiplier added");
 			}
 		}
+
+		EvaluateMultMagicEffects(caster);
 	}
 
 	void AddCostOverridesOnCast(RE::MagicCaster* caster)
@@ -285,12 +334,12 @@ namespace Cost
 			std::vector<bool> bools = {};
 			bool conditionsMet = false;
 			for (Condition condition : override->conditions) {
-				auto tempBool = CheckCondition(condition, caster);
-				logger::debug("Individual condition check was {}", tempBool);
+				auto tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
 				bools.push_back(tempBool);
 			}
 			if (override->condOp == "or") {
-				logger::debug("The comparative operator was 'or'");
+				logger::trace("The comparative operator was 'or'");
 				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
 				if (boolIt != bools.end()) {
@@ -300,7 +349,7 @@ namespace Cost
 				}
 			}
 			if (override->condOp == "and") {
-				logger::debug("The comparative operator was 'and'");
+				logger::trace("The comparative operator was 'and'");
 				auto boolIt = std::find(bools.begin(), bools.end(), false);
 
 				if (boolIt != bools.end()) {
@@ -310,15 +359,15 @@ namespace Cost
 				}
 			}
 			if (conditionsMet) {
-				auto it = GetCastInstance(caster);
-				auto currentCast = *it;
+				auto& currentCast = Cast::GetCastInstance(caster);
+
 				if (!currentCast.cost) {
-					currentCast.cost = new AlteredCost();
+					currentCast.cost = std::make_unique<AlteredCost>();
 				}
 				currentCast.cost->overrideValue = override->value;
 				currentCast.cost->override = override->override;
 				currentCast.cost->excluded = override->excluded;
-				*it = currentCast;
+
 				if (currentCast.cost->override) {
 					if (currentCast.cost->excluded) {
 						logger::debug("Conditions were met; cost override of {} set and exclusion set to {}", currentCast.cost->overrideValue, currentCast.cost->excluded);

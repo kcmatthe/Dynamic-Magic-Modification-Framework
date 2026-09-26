@@ -9,6 +9,8 @@ set(sources ${sources}
 	src/Utility/MessageBox.cpp
 	src/Utility/Utility.h
 	src/Utility/Utility.cpp
+	src/Utility/KeyPress.cpp
+	src/Utility/KeyPress.h
 	src/Settings/Config.h
 	src/Settings/Config.cpp
 	src/Settings/Settings.h
@@ -34,5 +36,18 @@ set(sources ${sources}
 	src/DMMF/Spell.h
 	src/DMMF/Spell.cpp
 	src/DMMF/DMMF_API.cpp
+	src/DMMF/PluginData.h 
+	src/DMMF/PluginData.cpp
+
+	src/Utility/MagicNode.h
+	src/Utility/MagicNode.cpp
+
+	src/Hooks/Utility.cpp
+	src/Hooks/Utility.h
+
+	src/RE/Offset.h
+
+	src/TrueHUDAPI.h
+
 	src/main.cpp
 )

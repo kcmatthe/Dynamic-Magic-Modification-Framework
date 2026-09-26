@@ -9,13 +9,16 @@
 #include "Utility/Logger.h"
 #include "Utility/Utility.h"
 #include "Settings/Config.h"
+#include "Settings/Conditions.h"
 #include "Settings/Settings.h"
 #include "Hooks/Hooks.h"
 #include "Papyrus/Papyrus.h"
 
 #include "DMMF/ChargeTime.h"
 #include "DMMF/Spell.h"
-
+#include "Utility/KeyPress.h"
+#include "DMMF/PluginData.h"
+//#include "Hooks/PowerPatch.h"
 
 using namespace RE::BSScript;
 using namespace SKSE;
@@ -35,14 +38,17 @@ namespace
 			logger::info("Data Loaded");
 
 			config::GetFromJSON();
-			ReadFirstFormIdFromESP();
+			//ReadFirstFormIdFromESP();
+			PluginData::GetForms();
+			KeyPress::InputEventSink::RegisterInput();
+
 		} 
 
 		// When Skyrim starts, SKSE will begin by querying for SKSE plugins and then calling each plugin's SKSEPlugin_Load function.
 		// Once all load functions are called this message is sent.
 		if (event->type == SKSE::MessagingInterface::kPostLoad) {
 			logger::info("Post Load");
-			//Hooks::EffectItemReplaceTagsFunctor::Register();
+			
 			Hooks::CasterHook::Install();
 		}
 		// The user has started a new game by selecting New Game at the main menu.
@@ -104,9 +110,9 @@ extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []() {
 	v.PluginVersion(Version::MAJOR);
 	v.PluginName(Version::PROJECT);
 	v.AuthorName("_kmatt_");
-	v.UsesAddressLibrary(true);
+	v.UsesAddressLibrary();
 	v.CompatibleVersions({ SKSE::RUNTIME_SSE_LATEST_AE });
-	v.UsesNoStructs(true);
+	v.UsesNoStructs();
 
 	return v;
 }();
@@ -134,13 +140,12 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse)
 
 	SKSE::GetMessagingInterface()->RegisterListener(OnEvent);
 
+	SKSE::AllocTrampoline(256);
 	Hooks::GetChargeTimeVHook::Install();
-	
+	//Hooks::WriteHooks();
 	
 	InitializePapyrus();
-	InitializeSerialization();
-
-
+	//InitializeSerialization();
 
 	return true;
 };

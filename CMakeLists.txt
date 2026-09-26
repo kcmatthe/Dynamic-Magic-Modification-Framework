@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 set(NAME "DynamicMagicModificationFramework")
-set(VERSION 1.0.0)
+set(VERSION 2.0.1)
 
 # ---- Cache build vars ----
 
@@ -31,6 +31,7 @@ add_compile_definitions(SKYRIM)
 set(CommonLibPath "C:/Mods/Development/commonlibSSE NG/CommonlibSSE-NG VR")
 set(CommonLibName "CommonLibSSE")
 set(GameVersion "Skyrim")
+set(CMAKE_BUILD_TYPE "Release")
 
 find_commonlib_path()
 message(
@@ -38,7 +39,8 @@ message(
 	"Building ${NAME} ${VERSION} for ${SkyrimVersion} at ${SkyrimPath} with ${CommonLibName} at ${CommonLibPath}."
 )
 
-
+message(STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
+message(STATUS "CMAKE_CONFIGURATION_TYPES = ${CMAKE_CONFIGURATION_TYPES}")
 
 message(
 	STATUS
@@ -107,6 +109,12 @@ set(Boost_USE_STATIC_LIBS ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "")
 
 # ---- Dependencies ----
+
+# ---- CommonLibSSE-NG runtime configuration ----
+
+#set(ENABLE_SKYRIM_SE ON CACHE BOOL "Enable Skyrim SE support" FORCE)
+#set(ENABLE_SKYRIM_AE ON CACHE BOOL "Enable Skyrim AE support" FORCE)
+#set(ENABLE_SKYRIM_VR ON CACHE BOOL "Enable Skyrim VR support" FORCE)
 
 if (DEFINED CommonLibPath AND NOT ${CommonLibPath} STREQUAL "" AND IS_DIRECTORY ${CommonLibPath})
 	add_subdirectory(${CommonLibPath} ${CommonLibName} EXCLUDE_FROM_ALL)
@@ -230,8 +238,8 @@ if (MSVC)
 		${PROJECT_NAME}
 		PRIVATE
 
-			"$<$<CONFIG:DEBUG>:/INCREMENTAL;/OPT:NOREF;/OPT:NOICF>"
 			"$<$<CONFIG:RELEASE>:/INCREMENTAL:NO;/OPT:REF;/OPT:ICF;/DEBUG:FULL>"
+			"$<$<CONFIG:DEBUG>:/INCREMENTAL;/OPT:NOREF;/OPT:NOICF>"
 	)
 
 	# fix a warning with /Ob2 being overridden with /Ob3

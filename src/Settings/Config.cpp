@@ -10,14 +10,14 @@
 namespace config
 {
 
-	using namespace Conditions;
+	//using namespace Conditions;
 
 	bool GetOverrides(rapidjson::Document& config, std::string configLocation)
 	{
 		if (config.HasMember("Overrides")) {
 			const rapidjson::Value& overrides = config["Overrides"];
 			if (overrides.IsArray()) {
-				logger::info("About to iterate through all {} overrides in the json", overrides.Size());
+				logger::info("About to iterate through {} override(s) in the json", overrides.Size());
 				for (int i = 0; i < overrides.Size(); i++) {
 					//Variables for overrides
 					bool exclude = false;        //whether or not to exclude
@@ -57,19 +57,22 @@ namespace config
 							const char* variable = "";
 							const char* variableDetail = "";
 							const char* op = "";
-							std::variant<std::string, float, bool> condValue;
+							std::variant<std::monostate, std::string, int, float, bool> condValue;
 
 							if (conditions[j].HasMember("condition")) {
 								if (conditions[j]["condition"].IsString()) {
 									variable = conditions[j]["condition"].GetString();
 									auto variable_s = std::string(variable);
-									if (variable_s == "global" || variable_s == "Global") {
-										if (conditions[j].HasMember("conditionDetail")) {
-											if (conditions[j]["conditionDetail"].IsString()) {
-												variableDetail = conditions[j]["conditionDetail"].GetString();
-											}
+									
+									if (conditions[j].HasMember("conditionDetail")) {
+										if (conditions[j]["conditionDetail"].IsString()) {
+											variableDetail = conditions[j]["conditionDetail"].GetString();
 										}
+									} else {
+										variableDetail = "";
+										//logger::info("No conditionDetail.");
 									}
+									
 								} else {
 									variable = "";
 									logger::info("No valid variable");
@@ -90,7 +93,10 @@ namespace config
 										condValue = overrides[i]["conditions"][j]["value"].GetFloat();
 									} else if (conditions[j]["value"].IsBool()) {
 										condValue = overrides[i]["conditions"][j]["value"].GetBool();
-									} else {
+									} else if (conditions[j]["value"].IsInt()) {
+										condValue = overrides[i]["conditions"][j]["value"].GetInt();
+									} else
+										{
 										logger::info("No valid condition value");
 									}
 								} else {
@@ -98,19 +104,23 @@ namespace config
 								}
 
 								if (!std::holds_alternative<std::string>(condValue) || (std::holds_alternative<std::string>(condValue) && *std::get_if<std::string>(&condValue) != "")) {
-									auto assignedVariable = AssignVariable(variable, condValue);
-									auto newCondition = Condition(variable, op, assignedVariable, variableDetail);
+									
+									Conditions::Condition newCondition(variable, op, condValue, variableDetail);
 									override->conditions.push_back(newCondition);
 									if (std::holds_alternative<std::string>(condValue)) {
-										auto cvString = *std::get_if<std::string>(&condValue);
-										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvString);
-									} else if (std::holds_alternative<std::string>(condValue)) {
-										auto cvFloat = *std::get_if<float>(&condValue);
-										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvFloat);
-									} else if (std::holds_alternative<std::string>(condValue)) {
-										auto cvBool = *std::get_if<bool>(&condValue);
-										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvBool);
+										auto cv = *std::get_if<std::string>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
+									} else if (std::holds_alternative<float>(condValue)) {
+										auto cv = *std::get_if<float>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
+									} else if (std::holds_alternative<bool>(condValue)) {
+										auto cv = *std::get_if<bool>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
+									} else if (std::holds_alternative<int>(condValue)) {
+										auto cv = *std::get_if<int>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
 									}
+									
 								}
 								
 							} else {
@@ -140,7 +150,10 @@ namespace config
 							cOverrides.push_back(override);
 						} else if (parameter_s == "Magnitude" || parameter_s == "magnitude") {
 							mOverrides.push_back(override);
-						} else {
+						} else if (parameter_s == "Duration" || parameter_s == "duration") {
+							dOverrides.push_back(override);
+						} 
+						else {
 							logger::info("No valid parameter.");
 						}
 						logger::info("Read override for parameter: {} exclude: {}, override: {}, value: {}", parameter_s, exclude, bOverride, value);
@@ -163,7 +176,7 @@ namespace config
 			const rapidjson::Value& multipliers = config["Multipliers"];
 
 			if (multipliers.IsArray()) {
-				logger::info("About to iterate through all {} multipliers in the json", multipliers.Size());
+				logger::info("About to iterate through {} multiplier(s) in the json", multipliers.Size());
 				for (int i = 0; i < multipliers.Size(); i++) {
 					Multiplier* newMultiplier = new Multiplier();     //New Multiplier struct with regular float values
 					MultiplierF* newMultiplierF = new MultiplierF();  //New Multiplier struct with functions
@@ -232,18 +245,19 @@ namespace config
 									const char* variable = "";
 									const char* variableDetail = "";
 									const char* op = "";
-									std::variant<std::string, float, bool> condValue;
+									std::variant<std::monostate, std::string, int, float, bool> condValue;
 
 									if (conditions[j].HasMember("condition")) {
 										if (conditions[j]["condition"].IsString()) {
 											variable = conditions[j]["condition"].GetString();
 											auto variable_s = std::string(variable);
-											if (variable_s == "global" || variable_s == "Global") {
-												if (conditions[j].HasMember("conditionDetail")) {
-													if (conditions[j]["conditionDetail"].IsString()) {
-														variableDetail = conditions[j]["conditionDetail"].GetString();
-													}
+											if (conditions[j].HasMember("conditionDetail")) {
+												if (conditions[j]["conditionDetail"].IsString()) {
+													variableDetail = conditions[j]["conditionDetail"].GetString();
 												}
+											} else {
+												variableDetail = "";
+												//logger::info("No conditionDetail.");
 											}
 										} else {
 											variable = "";
@@ -264,6 +278,8 @@ namespace config
 												condValue = multipliers[i]["conditions"][j]["value"].GetFloat();
 											} else if (conditions[j]["value"].IsBool()) {
 												condValue = multipliers[i]["conditions"][j]["value"].GetBool();
+											} else if (conditions[j]["value"].IsInt()) {
+												condValue = multipliers[i]["conditions"][j]["value"].GetInt();
 											}
 											else {
 												logger::info("No valid condition value");
@@ -273,22 +289,25 @@ namespace config
 										}
 
 										if (!std::holds_alternative<std::string>(condValue) || (std::holds_alternative<std::string>(condValue) && *std::get_if<std::string>(&condValue) != "")) {
-											auto assignedVariable = Conditions::AssignVariable(variable, condValue);
-											auto newCondition = Conditions::Condition(variable, op, assignedVariable, variableDetail);
+											
+											Conditions::Condition newCondition(variable, op, condValue, variableDetail);
 											if (isFunction) {
 												newMultiplierF->conditions.push_back(newCondition);
 											} else {
 												newMultiplier->conditions.push_back(newCondition);
 											}
 											if (std::holds_alternative<std::string>(condValue)) {
-												auto cvString = *std::get_if<std::string>(&condValue);
-												logger::info("Pushed back a new condition: {} {} {}", variable, op, cvString);
-											} else if (std::holds_alternative<std::string>(condValue)) {
-												auto cvFloat = *std::get_if<float>(&condValue);
-												logger::info("Pushed back a new condition: {} {} {}", variable, op, cvFloat);
-											} else if (std::holds_alternative<std::string>(condValue)) {
-												auto cvBool = *std::get_if<bool>(&condValue);
-												logger::info("Pushed back a new condition: {} {} {}", variable, op, cvBool);
+												auto cv = *std::get_if<std::string>(&condValue);
+												logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
+											} else if (std::holds_alternative<float>(condValue)) {
+												auto cv = *std::get_if<float>(&condValue);
+												logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
+											} else if (std::holds_alternative<bool>(condValue)) {
+												auto cv = *std::get_if<bool>(&condValue);
+												logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
+											} else if (std::holds_alternative<int>(condValue)) {
+												auto cv = *std::get_if<int>(&condValue);
+												logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
 											}
 										}
 
@@ -344,6 +363,16 @@ namespace config
 										mMultipliers.push_back(newMultiplier);
 										logger::info("A multiplier of {} effecting parameter: {} added with {} conditions", mult, parameter_s, numCond);
 									}
+								} else if (parameter_s == "Duration" || parameter_s == "duration") {
+									if (isFunction) {
+										newMultiplierF->condOp = condOp;
+										dMultipliersF.push_back(newMultiplierF);
+										logger::info("A multiplier effecting parameter: {} with the function: '{}' added with {} conditions", parameter_s, function, numCond);
+									} else {
+										newMultiplier->condOp = condOp;
+										dMultipliers.push_back(newMultiplier);
+										logger::info("A multiplier of {} effecting parameter: {} added with {} conditions", mult, parameter_s, numCond);
+									}
 								} else {
 									logger::info("No valid parameter.");
 								}
@@ -373,7 +402,7 @@ namespace config
 			const rapidjson::Value& modifiers = config["Modifiers"];
 
 			if (modifiers.IsArray()) {
-				logger::info("About to iterate through all {} modifiers in the json", modifiers.Size());
+				logger::info("About to iterate through {} modifier(s) in the json", modifiers.Size());
 				for (int i = 0; i < modifiers.Size(); i++) {
 					Modifier* newModifier = new Modifier();
 					ModifierF* newModifierF = new ModifierF();
@@ -441,18 +470,19 @@ namespace config
 									const char* variable = "";
 									const char* variableDetail = "";
 									const char* op = "";
-									std::variant<std::string, float, bool> condValue;
+									std::variant<std::monostate, std::string, int, float, bool> condValue;
 
 									if (conditions[j].HasMember("condition")) {
 										if (conditions[j]["condition"].IsString()) {
 											variable = conditions[j]["condition"].GetString();
 											auto variable_s = std::string(variable);
-											if (variable_s == "global" || variable_s == "Global") {
-												if (conditions[j].HasMember("conditionDetail")) {
-													if (conditions[j]["conditionDetail"].IsString()) {
-														variableDetail = conditions[j]["conditionDetail"].GetString();
-													}
+											if (conditions[j].HasMember("conditionDetail")) {
+												if (conditions[j]["conditionDetail"].IsString()) {
+													variableDetail = conditions[j]["conditionDetail"].GetString();
 												}
+											} else {
+												variableDetail = "";
+												//logger::info("No conditionDetail.");
 											}
 										} else {
 											variable = "";
@@ -473,6 +503,8 @@ namespace config
 												condValue = modifiers[i]["conditions"][j]["value"].GetFloat();
 											} else if (conditions[j]["value"].IsBool()) {
 												condValue = modifiers[i]["conditions"][j]["value"].GetBool();
+											} else if (conditions[j]["value"].IsInt()) {
+												condValue = modifiers[i]["conditions"][j]["value"].GetInt();
 											} else {
 												logger::info("No valid condition value");
 											}
@@ -481,22 +513,25 @@ namespace config
 										}
 
 										if (!std::holds_alternative<std::string>(condValue) || (std::holds_alternative<std::string>(condValue) && *std::get_if<std::string>(&condValue) != "")) {
-											auto assignedVariable = Conditions::AssignVariable(variable, condValue);
-											auto newCondition = Conditions::Condition(variable, op, assignedVariable, variableDetail);
+											
+											Conditions::Condition newCondition(variable, op, condValue, variableDetail);
 											if (isFunction) {
 												newModifierF->conditions.push_back(newCondition);
 											} else {
 												newModifier->conditions.push_back(newCondition);
 											}
 											if (std::holds_alternative<std::string>(condValue)) {
-												auto cvString = *std::get_if<std::string>(&condValue);
-												logger::info("Pushed back a new condition: {} {} {}", variable, op, cvString);
-											} else if (std::holds_alternative<std::string>(condValue)) {
-												auto cvFloat = *std::get_if<float>(&condValue);
-												logger::info("Pushed back a new condition: {} {} {}", variable, op, cvFloat);
-											} else if (std::holds_alternative<std::string>(condValue)) {
-												auto cvBool = *std::get_if<bool>(&condValue);
-												logger::info("Pushed back a new condition: {} {} {}", variable, op, cvBool);
+												auto cv = *std::get_if<std::string>(&condValue);
+												logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
+											} else if (std::holds_alternative<float>(condValue)) {
+												auto cv = *std::get_if<float>(&condValue);
+												logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
+											} else if (std::holds_alternative<bool>(condValue)) {
+												auto cv = *std::get_if<bool>(&condValue);
+												logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
+											} else if (std::holds_alternative<int>(condValue)) {
+												auto cv = *std::get_if<int>(&condValue);
+												logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
 											}
 										}
 
@@ -551,7 +586,18 @@ namespace config
 										mModifiers.push_back(newModifier);
 										logger::info("A modifier of {} effecting parameter: {} added with {} conditions", mult, parameter_s, numCond);
 									}
-								} else {
+								} else if (parameter_s == "Duration" || parameter_s == "duration") {
+									if (isFunction) {
+										newModifierF->condOp = condOp;
+										dModifiersF.push_back(newModifierF);
+										logger::info("A modifier effecting parameter: {} with the function: '{}' added with {} conditions", parameter_s, function, numCond);
+									} else {
+										newModifier->condOp = condOp;
+										dModifiers.push_back(newModifier);
+										logger::info("A modifier of {} effecting parameter: {} added with {} conditions", mult, parameter_s, numCond);
+									}
+								} else
+									{
 									logger::info("No valid parameter.");
 								}
 
@@ -578,10 +624,12 @@ namespace config
 		if (config.HasMember("Resources")) {
 			const rapidjson::Value& resources = config["Resources"];
 			if (resources.IsArray()) {
-				logger::info("About to iterate through all {} resources in the json", resources.Size());
+				logger::info("About to iterate through {} resource(s) in the json", resources.Size());
 				for (int i = 0; i < resources.Size(); i++) {
 					//Variables for Spells, Scrolls, and Staves
 					const char* res;
+					const char* secRes;
+					float secMult = 1;
 					const char* condOp = "and";  //comparative operator
 					float numCond = 0;           //number of conditions
 					if (resources[i].HasMember("resource") && resources[i]["resource"].IsString()) {
@@ -590,16 +638,26 @@ namespace config
 						res = "magicka";
 						logger::info("No valid resource for index {}. Resource set to magicka", i);
 					}
-
-					CastingResource* resource = new CastingResource();
-					auto res_s = std::string(res);
-					if (res_s == "magicka") {
-						resource->resource = RE::ActorValue::kMagicka;
-					} else if (res_s == "health") {
-						resource->resource = RE::ActorValue::kHealth;
-					} else if (res_s == "stamina") {
-						resource->resource = RE::ActorValue::kStamina;
+					if (resources[i].HasMember("secondaryResource") && resources[i]["secondaryResource"].IsString()) {
+						secRes = (resources[i]["secondaryResource"].GetString());
+					} else {
+						secRes = "none";
+						logger::info("No valid secondary resource for index {}. Secondary resource set to none", i);
 					}
+					if (resources[i].HasMember("secondaryMultiplier") && resources[i]["secondaryMultiplier"].IsFloat()) {
+						secMult = (resources[i]["secondaryMultiplier"].GetFloat());
+					} 
+					CastingResource* resource = new CastingResource();
+					//auto res_s = std::string(res);
+					//this would have new logic to support all AVs including custom AVs
+					//if doesn't work, just have a check for none.
+					auto list = RE::ActorValueList::GetSingleton();
+
+					auto av = list->LookupActorValueByName(res);
+					resource->resource = av;
+					auto av2 = list->LookupActorValueByName(secRes);
+					resource->secondaryResource = av2;
+					resource->secondaryMult = secMult;
 
 					if (resources[i].HasMember("conditions") && resources[i]["conditions"].IsArray()) {
 						const rapidjson::Value& conditions = resources[i]["conditions"];
@@ -609,18 +667,19 @@ namespace config
 							const char* variable = "";
 							const char* variableDetail = "";
 							const char* op = "";
-							std::variant<std::string, float, bool> condValue;
+							std::variant<std::monostate, std::string, int, float, bool> condValue;
 
 							if (conditions[j].HasMember("condition")) {
 								if (conditions[j]["condition"].IsString()) {
 									variable = conditions[j]["condition"].GetString();
 									auto variable_s = std::string(variable);
-									if (variable_s == "global" || variable_s == "Global") {
-										if (conditions[j].HasMember("conditionDetail")) {
-											if (conditions[j]["conditionDetail"].IsString()) {
-												variableDetail = conditions[j]["conditionDetail"].GetString();
-											}
+									if (conditions[j].HasMember("conditionDetail")) {
+										if (conditions[j]["conditionDetail"].IsString()) {
+											variableDetail = conditions[j]["conditionDetail"].GetString();
 										}
+									} else {
+										variableDetail = "";
+										//logger::info("No conditionDetail.");
 									}
 								} else {
 									variable = "";
@@ -642,6 +701,8 @@ namespace config
 										condValue = resources[i]["conditions"][j]["value"].GetFloat();
 									} else if (conditions[j]["value"].IsBool()) {
 										condValue = resources[i]["conditions"][j]["value"].GetBool();
+									} else if (conditions[j]["value"].IsInt()) {
+										condValue = resources[i]["conditions"][j]["value"].GetInt();
 									} else {
 										logger::info("No valid condition value");
 									}
@@ -650,18 +711,21 @@ namespace config
 								}
 
 								if (!std::holds_alternative<std::string>(condValue) || (std::holds_alternative<std::string>(condValue) && *std::get_if<std::string>(&condValue) != "")) {
-									auto assignedVariable = AssignVariable(variable, condValue);
-									auto newCondition = Condition(variable, op, assignedVariable, variableDetail);
+									
+									Conditions::Condition newCondition(variable, op, condValue, variableDetail);
 									resource->conditions.push_back(newCondition);
 									if (std::holds_alternative<std::string>(condValue)) {
-										auto cvString = *std::get_if<std::string>(&condValue);
-										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvString);
-									} else if (std::holds_alternative<std::string>(condValue)) {
-										auto cvFloat = *std::get_if<float>(&condValue);
-										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvFloat);
-									} else if (std::holds_alternative<std::string>(condValue)) {
-										auto cvBool = *std::get_if<bool>(&condValue);
-										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvBool);
+										auto cv = *std::get_if<std::string>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
+									} else if (std::holds_alternative<float>(condValue)) {
+										auto cv = *std::get_if<float>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
+									} else if (std::holds_alternative<bool>(condValue)) {
+										auto cv = *std::get_if<bool>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
+									} else if (std::holds_alternative<int>(condValue)) {
+										auto cv = *std::get_if<int>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
 									}
 								}
 
@@ -683,7 +747,7 @@ namespace config
 
 					//Add to resources vector
 					Resources.push_back(resource);
-					logger::info("Added a resource ({}) with {} conditions", res, numCond);
+					logger::info("Added a resource ({}) with a secondary resource {} (muliplier: {}) with {} conditions", res, secRes, secMult, numCond);
 				}
 			} else {
 				logger::info("{} did not contain a valid array: resources", configLocation);
@@ -699,7 +763,7 @@ namespace config
 		if (config.HasMember("Replacements")) {
 			const rapidjson::Value& replacements = config["Replacements"];
 			if (replacements.IsArray()) {
-				logger::info("About to iterate through all {} replacements in the json", replacements.Size());
+				logger::info("About to iterate through {} replacement(s) in the json", replacements.Size());
 				for (int i = 0; i < replacements.Size(); i++) {
 					//Variables for Spells, Scrolls, and Staves
 					const char* res = "";
@@ -730,18 +794,19 @@ namespace config
 							const char* variable = "";
 							const char* variableDetail = "";
 							const char* op = "";
-							std::variant<std::string, float, bool> condValue;
+							std::variant<std::monostate, std::string, int, float, bool> condValue;
 
 							if (conditions[j].HasMember("condition")) {
 								if (conditions[j]["condition"].IsString()) {
 									variable = conditions[j]["condition"].GetString();
 									auto variable_s = std::string(variable);
-									if (variable_s == "global" || variable_s == "Global") {
-										if (conditions[j].HasMember("conditionDetail")) {
-											if (conditions[j]["conditionDetail"].IsString()) {
-												variableDetail = conditions[j]["conditionDetail"].GetString();
-											}
+									if (conditions[j].HasMember("conditionDetail")) {
+										if (conditions[j]["conditionDetail"].IsString()) {
+											variableDetail = conditions[j]["conditionDetail"].GetString();
 										}
+									} else {
+										variableDetail = "";
+										//logger::info("No conditionDetail.");
 									}
 								} else {
 									variable = "";
@@ -763,6 +828,8 @@ namespace config
 										condValue = replacements[i]["conditions"][j]["value"].GetFloat();
 									} else if (conditions[j]["value"].IsBool()) {
 										condValue = replacements[i]["conditions"][j]["value"].GetBool();
+									} else if (conditions[j]["value"].IsInt()) {
+										condValue = replacements[i]["conditions"][j]["value"].GetInt();
 									} else {
 										logger::info("No valid condition value");
 									}
@@ -771,18 +838,21 @@ namespace config
 								}
 
 								if (!std::holds_alternative<std::string>(condValue) || (std::holds_alternative<std::string>(condValue) && *std::get_if<std::string>(&condValue) != "")) {
-									auto assignedVariable = AssignVariable(variable, condValue);
-									auto newCondition = Condition(variable, op, assignedVariable, variableDetail);
+									
+									Conditions::Condition newCondition(variable, op, condValue, variableDetail);
 									replacement->conditions.push_back(newCondition);
 									if (std::holds_alternative<std::string>(condValue)) {
-										auto cvString = *std::get_if<std::string>(&condValue);
-										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvString);
-									} else if (std::holds_alternative<std::string>(condValue)) {
-										auto cvFloat = *std::get_if<float>(&condValue);
-										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvFloat);
-									} else if (std::holds_alternative<std::string>(condValue)) {
-										auto cvBool = *std::get_if<bool>(&condValue);
-										logger::info("Pushed back a new condition: {} {} {}", variable, op, cvBool);
+										auto cv = *std::get_if<std::string>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
+									} else if (std::holds_alternative<float>(condValue)) {
+										auto cv = *std::get_if<float>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
+									} else if (std::holds_alternative<bool>(condValue)) {
+										auto cv = *std::get_if<bool>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
+									} else if (std::holds_alternative<int>(condValue)) {
+										auto cv = *std::get_if<int>(&condValue);
+										logger::info("Pushed back a new condition: {} {} {} {}", variable, op, cv, variableDetail);
 									}
 								}
 
@@ -815,11 +885,57 @@ namespace config
 		return true;
 	}
 
+	bool GetTranslation(rapidjson::Document& config, std::string configLocation) {
+		if (config.HasMember("Translation")) {
+			const rapidjson::Value& translations = config["Translation"];
+			if (translations.IsArray()) {
+				logger::info("About to iterate through {} translation(s) in the json", translations.Size());
+				for (int i = 0; i < translations.Size(); i++) {
+					//Variables for Spells, Scrolls, and Staves
+					const char* magickaTranslation = "You don't have enough Magicka";
+					const char* healthTranslation = "You don't have enough Health";
+					const char* staminaTranslation = "You don't have enough Stamina";
+					const char* energyTranslation = "You don't have enough Energy";
+					
+					if (translations[i].HasMember("magicka") && translations[i]["magicka"].IsString()) {
+						magickaTranslation = (translations[i]["magicka"].GetString());
+						if (magickaTranslation != "") {
+							magicka = magickaTranslation;
+							logger::info("Found and added translation for magicka string");
+						}
+					} 
+					if (translations[i].HasMember("health") && translations[i]["health"].IsString()) {
+						healthTranslation = (translations[i]["health"].GetString());
+						if (healthTranslation != "") {
+							health = healthTranslation;
+							logger::info("Found and added translation for health string");
+						}
+					} 
+					if (translations[i].HasMember("stamina") && translations[i]["stamina"].IsString()) {
+						staminaTranslation = (translations[i]["stamina"].GetString());
+						if (staminaTranslation != "") {
+							stamina = staminaTranslation;
+							logger::info("Found and added translation for stamina string");
+						}
+					} 
+					if (translations[i].HasMember("energy") && translations[i]["energy"].IsString()) {
+						energyTranslation = (translations[i]["energy"].GetString());
+						if (energyTranslation != "") {
+							energy = energyTranslation;
+							logger::info("Found and added translation for energy string");
+						}
+					} 
+				}
+			}
+		}
+		return true;
+	}
+
 	bool GetFromJSON()
 	{
 		
 		logger::info("Attempting to access _DMMF.json's");
-		std::vector<std::filesystem::path> configPaths = clib_util::distribution::get_configs_paths(R"(Data\SKSE\Plugins\DynamicMagicModificationFramework\)", "_DMMF"sv, ".json");  //change to be _DMMF instead
+		std::vector<std::filesystem::path> configPaths = clib_util::distribution::get_configs_paths(R"(Data\SKSE\Plugins\DynamicMagicModificationFramework\)", "_DMMF"sv, ".json");  
 		std::filesystem::path configPath{ "Data/SKSE/Plugins/DynamicMagicModificationFramework/"sv };
 
 		logger::info("Iterating through {} json files", configPaths.size());
@@ -846,6 +962,7 @@ namespace config
 			bool gotModifiers = GetModifiers(config, configLocation.string());
 			bool gotResources = GetResources(config, configLocation.string());
 			bool gotReplacements = GetReplacements(config, configLocation.string());
+			bool gotTranslation = GetTranslation(config, configLocation.string());
 		}
 		return true;
 	}

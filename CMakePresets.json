@@ -22,7 +22,7 @@
       "cacheVariables": {
         "VCPKG_OVERLAY_PORTS": "${sourceDir}/cmake/ports/"
       },
-      "toolchainFile":  "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
       "hidden": true,
       "name": "vcpkg"
     },
@@ -52,6 +52,13 @@
       ],
       "name": "dynamicmagicmodificationframework",
       "toolset": "v143"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dynamicmagicmodificationframework-release",
+      "configurePreset": "dynamicmagicmodificationframework",
+      "configuration": "Release"
     }
   ],
   "version": 3

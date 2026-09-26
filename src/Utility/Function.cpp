@@ -54,6 +54,10 @@ namespace function
 				float difficulty = costliest->GetMinimumSkillLevel();
 				auto* actor = caster->GetCasterAsActor();
 				float skill = 0;
+				float magicka = actor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kMagicka);
+				float health = actor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kHealth);
+				float stamina = actor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kStamina);
+				
 
 				if (actor && av != RE::ActorValue::kNone) {
 					skill = actor->AsActorValueOwner()->GetActorValue(av);
@@ -69,6 +73,18 @@ namespace function
 					} else if (std::get<1>(variable) == "skill") {
 						value = skill;
 						logger::trace("assigning variable {} to skill of {}", name, value);
+					} else if (std::get<1>(variable) == "magicka"){
+						value = magicka;
+					} else if (std::get<1>(variable) == "health") {
+						value = health;
+					} else if (std::get<1>(variable) == "stamina") {
+						value = stamina;
+					} else if (std::get<1>(variable) == "magickaPercent") {
+						value = magicka / actor->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kMagicka);
+					} else if (std::get<1>(variable) == "healthPercent") {
+						value = health / actor->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kHealth);
+					} else if (std::get<1>(variable) == "staminaPercent") {
+						value = stamina / actor->AsActorValueOwner()->GetBaseActorValue(RE::ActorValue::kStamina);
 					} else if (std::get<1>(variable) == "global") {
 						auto global = Utility::TES::GetFormFromEditorID<RE::TESGlobal>(std::get<2>(variable));
 						if (global) {

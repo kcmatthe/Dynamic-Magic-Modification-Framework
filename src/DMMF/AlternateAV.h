@@ -3,13 +3,16 @@
 
 namespace AlternateAV
 {
-	//These functions will be used to alter what av is used to cast spells.
 	
 	bool FlashTrueHUDMeter(RE::Actor* a_actor, RE::ActorValue a_actorValue, bool a_long);
+
+	void RestoreActorValue(RE::Actor* a_actor, RE::ActorValue a_actorValue, float a_value);
 
 	void DamageActorValue(RE::Actor* a_actor, RE::ActorValue a_actorValue, float a_value);
 
 	void FlashHealthMeter(RE::Actor* a_actor);
+
+	void FlashStaminaMeter(RE::Actor* a_actor);
 
 	float GetActorValue(RE::Actor* a_actor, RE::ActorValue a_actorValue);
 

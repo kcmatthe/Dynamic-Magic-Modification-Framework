@@ -1,5 +1,77 @@
 #pragma once
 
+#include <cstdint>
+#include <vector>
+#include <shared_mutex>
+
+namespace DMMF_API
+{
+	inline constexpr std::uint32_t API_VERSION = 1;
+
+	struct QueryContext
+	{
+		RE::Actor* actor{ nullptr };
+		RE::MagicItem* magicItem{ nullptr };
+		float baseValue{ 0.0f };
+		std::uint32_t eventID{ 0 };
+	};
+
+	struct QueryResult
+	{
+		bool handled{ false };
+		float time{ -1.0f };
+		float timeMult{ 1.0f };
+		float timeMod{ 0.0f };
+		float cost{ -1.0f };
+		float costMult{ 1.0f };
+		float costMod{ 0.0f };
+		RE::MagicItem* spell{ nullptr };
+		RE::ActorValue resource{ RE::ActorValue::kNone };
+
+		std::uint32_t priority{ 0 };
+	};
+
+	using ComputeValueFn = bool (*)(const RE::ActorMagicCaster* caster, QueryResult* result);
+
+	struct ProviderRegistration
+	{
+		std::uint32_t apiVersion;
+		const char* providerName;
+		ComputeValueFn compute;
+	};
+
+	using RegisterProviderFn =
+		bool (*)(
+			const ProviderRegistration* provider);
+
+	using UnregisterProviderFn =
+		bool (*)(
+			const ProviderRegistration* provider);
+
+	using RequestValueFn =
+		QueryResult (*)(
+			const RE::ActorMagicCaster* caster);
+
+	struct HostAPI
+	{
+		std::uint32_t apiVersion;
+
+		RegisterProviderFn RegisterProvider;
+		UnregisterProviderFn UnregisterProvider;
+		RequestValueFn RequestValue;
+	};
+	extern const HostAPI g_api;
+}
+
+extern "C"
+{
+	__declspec(dllexport)
+		const DMMF_API::HostAPI* RequestDMMFAPI(
+			std::uint32_t requestedVersion);
+}
+
+
+/* old code 
 #define DMMF_EXPORTS
 	
 #ifdef DMMF_EXPORTS
@@ -40,6 +112,6 @@ extern "C" DLLEXPORT void SetResource(RE::MagicCaster* caster, RE::ActorValue re
 
 extern "C" DLLEXPORT RE::ActorValue GetResource(RE::MagicCaster* caster);
 
-
+*/
 	
 

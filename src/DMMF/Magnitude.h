@@ -7,4 +7,10 @@ namespace Magnitude
 	void AddMagMultipliersOnCast(RE::MagicCaster* caster);
 	void AddMagModifiersOnCast(RE::MagicCaster* caster);
 	void AddMagOverridesOnCast(RE::MagicCaster* caster);
+
+	float CalculateNewDur(float origin, Cast::AlteredDuration* duration);
+
+	void AddDurMultipliersOnCast(RE::MagicCaster* caster);
+	void AddDurModifiersOnCast(RE::MagicCaster* caster);
+	void AddDurOverridesOnCast(RE::MagicCaster* caster);
 }
