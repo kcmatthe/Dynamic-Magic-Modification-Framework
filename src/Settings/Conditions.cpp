@@ -11,7 +11,7 @@ namespace Conditions
 	/*
 	Conditions to add:
 
-	Offhand Equip (staff, sword, etc.); maybe an option for form type and an option for specific form
+	Offhand Equip (staff, sword, etc.); maybe an option for form type and an option for speccific form
 	Item Equipped (specific form or type)
 
 	Previous Spell - Should be easy, but may work better as a separate mod
@@ -78,13 +78,13 @@ namespace Conditions
 				return detail::CompareBool(isPlayer, op, true);
 			}
 
-			RE::Actor* expectedActor = Utility::TES::GetFormFromEditorID<RE::Actor>(*expected);
+			RE::TESNPC* expectedActor = Utility::TES::GetFormFromEditorID<RE::TESNPC>(*expected);
 
 			if (!expectedActor) {
 				return false;
 			}
-
-			return detail::CompareBool(actor == expectedActor, op, true);
+			
+			return detail::CompareBool(actor->GetActorBase() == expectedActor, op, true);
 		}
 
 		if (variable == "keyword") {
@@ -172,10 +172,17 @@ namespace Conditions
 			logger::info("attempting to ray cast");
 			auto result = Utility::RayCast::RayCast(start, dir, 10000, caster->GetCasterAsActor());
 			auto hitRef = result.hitObjectRef;
+			//might need to check if ref is an NPC. if NPC compare hitRef as actor->GetActorBase to variableDetail as TESNPC
+			
 			if (hitRef) {
 				logger::info("Raycasted a ref named {}", hitRef->GetName());
+				if (Utility::TES::GetFormFromEditorID<RE::TESNPC>(condition.variableDetail) && hitRef->As<RE::Actor>()) {
+					logger::info("Raycasted an actor; comparing to NPC");
+					return (hitRef->As<RE::Actor>()->GetActorBase() == Utility::TES::GetFormFromEditorID<RE::TESNPC>(condition.variableDetail));
+				}
 
 				if (Utility::TES::GetFormFromEditorID<RE::TESObjectREFR>(condition.variableDetail)) {
+					logger::info("Raycasted an object ref; comparing to object ref");
 					return (hitRef == Utility::TES::GetFormFromEditorID<RE::TESObjectREFR>(condition.variableDetail));
 				}
 			}
@@ -212,9 +219,13 @@ namespace Conditions
 			}
 
 			const RE::ActorValue schoolAV = magicItem->GetAssociatedSkill();
-			const float currentValue = actor->AsActorValueOwner()->GetActorValue(schoolAV);
-
-			return detail::CompareNumeric(currentValue, op, *expected);
+			if (schoolAV != RE::ActorValue::kNone) {
+				const float currentValue = actor->AsActorValueOwner()->GetActorValue(schoolAV);
+		
+				return detail::CompareNumeric(currentValue, op, *expected);
+			} else {
+				return false;
+			}
 		}
 
 		if (variable == "difficulty") {
@@ -222,15 +233,26 @@ namespace Conditions
 			if (!expected) {
 				return false;
 			}
+			auto costliest = magicItem->GetCostliestEffectItem();
+			if (!costliest) {
+				logger::warn("Costliest effect was null");
+				return false;
+			}
 
-			const float difficulty = magicItem->GetCostliestEffectItem()->baseEffect->GetMinimumSkillLevel();
+			auto baseEffect = costliest->baseEffect;
+			if (!baseEffect) {
+				logger::warn("Base effect was null");
+				return false;
+			}
+
+			const float difficulty = baseEffect->GetMinimumSkillLevel();
 
 			return detail::CompareNumeric(difficulty, op, *expected);
 		}
 
 		if (variable == "global") {
 			const auto expected = detail::GetFloatValue(condition);
-			if (!expected || condition.variableDetail.empty() || !detail::IsEqualityOperator(op)) {
+			if (!expected || condition.variableDetail.empty()) {
 				return false;
 			}
 
@@ -378,7 +400,9 @@ namespace Conditions
 				if (!ae) {
 					continue;
 				}
-
+				if (!ae->effect || !ae->effect->baseEffect) {
+					continue;
+				}
 				if (ae->effect->baseEffect == checkedEffect) {
 					hasEffect = true;
 				}
@@ -419,6 +443,5 @@ namespace Conditions
 		
 	}
 
-	
 }
 

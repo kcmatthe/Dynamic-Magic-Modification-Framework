@@ -61,6 +61,7 @@ namespace
 		if (event->type == SKSE::MessagingInterface::kPostLoadGame) {
 			logger::info("Post Load Game");
 			Settings::ReadSettings();
+			//RE::TESNPC* expectedActor = Utility::TES::GetFormFromEditorID<RE::TESNPC>("DLC1Serana");
 		}
 		// Once all kPostLoad handlers have run, it will signal kPostPostLoad.
 		if (event->type == SKSE::MessagingInterface::kPostPostLoad) {

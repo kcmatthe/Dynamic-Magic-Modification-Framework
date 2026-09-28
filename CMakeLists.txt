@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 set(NAME "DynamicMagicModificationFramework")
-set(VERSION 2.0.1)
+set(VERSION 2.0.2)
 
 # ---- Cache build vars ----
 

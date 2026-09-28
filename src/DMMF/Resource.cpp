@@ -99,33 +99,8 @@ namespace Resource
 
 		logger::debug("Going through {} resources", Resources.size());
 		for (auto resource : Resources) {
-			std::vector<bool> bools = {};
-			bool conditionsMet = false;
-			for (Condition condition : resource->conditions) {
-				auto tempBool = EvaluateCondition(condition, caster);
-				logger::trace("Individual condition check was {}", tempBool);
-				bools.push_back(tempBool);
-			}
-			if (resource->condOp == "or") {
-				logger::trace("The comparative operator was 'or'");
-				auto boolIt = std::find(bools.begin(), bools.end(), true);
+			const bool conditionsMet = Conditions::EvaluateConditionsList(resource, caster);
 
-				if (boolIt != bools.end()) {
-					conditionsMet = true;
-				} else {
-					conditionsMet = false;
-				}
-			}
-			if (resource->condOp == "and") {
-				logger::trace("The comparative operator was 'and'");
-				auto boolIt = std::find(bools.begin(), bools.end(), false);
-
-				if (boolIt != bools.end()) {
-					conditionsMet = false;
-				} else {
-					conditionsMet = true;
-				}
-			}
 			if (conditionsMet) {
 				auto& currentCast = Cast::GetCastInstance(caster);
 

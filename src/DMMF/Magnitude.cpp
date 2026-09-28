@@ -65,33 +65,8 @@ namespace Magnitude
 	{
 		logger::debug("Going through {} mag modifiers", mModifiers.size());
 		for (Modifier* modifier : mModifiers) {
-			std::vector<bool> bools = {};
-			bool conditionsMet = false;
-			for (Condition condition : modifier->conditions) {
-				auto tempBool = EvaluateCondition(condition, caster);
-				logger::trace("Individual condition check was {}", tempBool);
-				bools.push_back(tempBool);
-			}
-			if (modifier->condOp == "or") {
-				logger::trace("The comparative operator was 'or'");
-				auto boolIt = std::find(bools.begin(), bools.end(), true);
+			const bool conditionsMet = Conditions::EvaluateConditionsList(modifier, caster);
 
-				if (boolIt != bools.end()) {
-					conditionsMet = true;
-				} else {
-					conditionsMet = false;
-				}
-			}
-			if (modifier->condOp == "and") {
-				logger::trace("The comparative operator was 'and'");
-				auto boolIt = std::find(bools.begin(), bools.end(), false);
-
-				if (boolIt != bools.end()) {
-					conditionsMet = false;
-				} else {
-					conditionsMet = true;
-				}
-			}
 			if (conditionsMet) {
 				auto& currentCast = Cast::GetCastInstance(caster);
 
@@ -107,33 +82,8 @@ namespace Magnitude
 		}
 		logger::debug("Going through {} mag function modifiers", mModifiersF.size());
 		for (ModifierF* modifier : mModifiersF) {
-			std::vector<bool> bools = {};
-			bool conditionsMet = false;
-			for (Condition condition : modifier->conditions) {
-				auto tempBool = EvaluateCondition(condition, caster);
-				logger::trace("Individual condition check was {}", tempBool);
-				bools.push_back(tempBool);
-			}
-			if (modifier->condOp == "or") {
-				logger::trace("The comparative operator was 'or'");
-				auto boolIt = std::find(bools.begin(), bools.end(), true);
+			const bool conditionsMet = Conditions::EvaluateConditionsList(modifier, caster);
 
-				if (boolIt != bools.end()) {
-					conditionsMet = true;
-				} else {
-					conditionsMet = false;
-				}
-			}
-			if (modifier->condOp == "and") {
-				logger::trace("The comparative operator was 'and'");
-				auto boolIt = std::find(bools.begin(), bools.end(), false);
-
-				if (boolIt != bools.end()) {
-					conditionsMet = false;
-				} else {
-					conditionsMet = true;
-				}
-			}
 			if (conditionsMet) {
 				auto mult = function::evaluateExpression(modifier->function.function, function::AssignVariables(modifier->function.variables, caster));
 
@@ -155,33 +105,8 @@ namespace Magnitude
 	{
 		logger::debug("Going through {} mag multipliers", mMultipliers.size());
 		for (Multiplier* multiplier : mMultipliers) {
-			std::vector<bool> bools = {};
-			bool conditionsMet = false;
-			for (Condition condition : multiplier->conditions) {
-				auto tempBool = EvaluateCondition(condition, caster);
-				logger::trace("Individual condition check was {}", tempBool);
-				bools.push_back(tempBool);
-			}
-			if (multiplier->condOp == "or") {
-				logger::trace("The comparative operator was 'or'");
-				auto boolIt = std::find(bools.begin(), bools.end(), true);
+			const bool conditionsMet = Conditions::EvaluateConditionsList(multiplier, caster);
 
-				if (boolIt != bools.end()) {
-					conditionsMet = true;
-				} else {
-					conditionsMet = false;
-				}
-			}
-			if (multiplier->condOp == "and") {
-				logger::trace("The comparative operator was 'and'");
-				auto boolIt = std::find(bools.begin(), bools.end(), false);
-
-				if (boolIt != bools.end()) {
-					conditionsMet = false;
-				} else {
-					conditionsMet = true;
-				}
-			}
 			if (conditionsMet) {
 				auto& currentCast = Cast::GetCastInstance(caster);
 
@@ -198,33 +123,9 @@ namespace Magnitude
 
 		logger::debug("Going through {} mag function multipliers", mMultipliersF.size());
 		for (MultiplierF* multiplier : mMultipliersF) {
-			std::vector<bool> bools = {};
-			bool conditionsMet = false;
-			for (Condition condition : multiplier->conditions) {
-				auto tempBool = EvaluateCondition(condition, caster);
-				logger::trace("Individual condition check was {}", tempBool);
-				bools.push_back(tempBool);
-			}
-			if (multiplier->condOp == "or") {
-				logger::trace("The comparative operator was 'or'");
-				auto boolIt = std::find(bools.begin(), bools.end(), true);
 
-				if (boolIt != bools.end()) {
-					conditionsMet = true;
-				} else {
-					conditionsMet = false;
-				}
-			}
-			if (multiplier->condOp == "and") {
-				logger::trace("The comparative operator was 'and'");
-				auto boolIt = std::find(bools.begin(), bools.end(), false);
+			const bool conditionsMet = Conditions::EvaluateConditionsList(multiplier, caster);
 
-				if (boolIt != bools.end()) {
-					conditionsMet = false;
-				} else {
-					conditionsMet = true;
-				}
-			}
 			if (conditionsMet) {
 				auto mult = function::evaluateExpression(multiplier->function.function, function::AssignVariables(multiplier->function.variables, caster));
 
@@ -246,33 +147,8 @@ namespace Magnitude
 	{
 		logger::debug("Going through {} mag overrides", mOverrides.size());
 		for (auto override : mOverrides) {
-			std::vector<bool> bools = {};
-			bool conditionsMet = false;
-			for (Condition condition : override->conditions) {
-				auto tempBool = EvaluateCondition(condition, caster);
-				logger::trace("Individual condition check was {}", tempBool);
-				bools.push_back(tempBool);
-			}
-			if (override->condOp == "or") {
-				logger::trace("The comparative operator was 'or'");
-				auto boolIt = std::find(bools.begin(), bools.end(), true);
+			const bool conditionsMet = Conditions::EvaluateConditionsList(override, caster);
 
-				if (boolIt != bools.end()) {
-					conditionsMet = true;
-				} else {
-					conditionsMet = false;
-				}
-			}
-			if (override->condOp == "and") {
-				logger::trace("The comparative operator was 'and'");
-				auto boolIt = std::find(bools.begin(), bools.end(), false);
-
-				if (boolIt != bools.end()) {
-					conditionsMet = false;
-				} else {
-					conditionsMet = true;
-				}
-			}
 			if (conditionsMet) {
 				auto& currentCast = Cast::GetCastInstance(caster);
 
@@ -356,33 +232,8 @@ namespace Magnitude
 	{
 		logger::debug("Going through {} duration modifiers", dModifiers.size());
 		for (Modifier* modifier : dModifiers) {
-			std::vector<bool> bools = {};
-			bool conditionsMet = false;
-			for (Condition condition : modifier->conditions) {
-				auto tempBool = EvaluateCondition(condition, caster);
-				logger::trace("Individual condition check was {}", tempBool);
-				bools.push_back(tempBool);
-			}
-			if (modifier->condOp == "or") {
-				logger::trace("The comparative operator was 'or'");
-				auto boolIt = std::find(bools.begin(), bools.end(), true);
+			const bool conditionsMet = Conditions::EvaluateConditionsList(modifier, caster);
 
-				if (boolIt != bools.end()) {
-					conditionsMet = true;
-				} else {
-					conditionsMet = false;
-				}
-			}
-			if (modifier->condOp == "and") {
-				logger::trace("The comparative operator was 'and'");
-				auto boolIt = std::find(bools.begin(), bools.end(), false);
-
-				if (boolIt != bools.end()) {
-					conditionsMet = false;
-				} else {
-					conditionsMet = true;
-				}
-			}
 			if (conditionsMet) {
 				auto& currentCast = Cast::GetCastInstance(caster);
 
@@ -398,33 +249,8 @@ namespace Magnitude
 		}
 		logger::debug("Going through {} duration function modifiers", dModifiersF.size());
 		for (ModifierF* modifier : dModifiersF) {
-			std::vector<bool> bools = {};
-			bool conditionsMet = false;
-			for (Condition condition : modifier->conditions) {
-				auto tempBool = EvaluateCondition(condition, caster);
-				logger::trace("Individual condition check was {}", tempBool);
-				bools.push_back(tempBool);
-			}
-			if (modifier->condOp == "or") {
-				logger::trace("The comparative operator was 'or'");
-				auto boolIt = std::find(bools.begin(), bools.end(), true);
+			const bool conditionsMet = Conditions::EvaluateConditionsList(modifier, caster);
 
-				if (boolIt != bools.end()) {
-					conditionsMet = true;
-				} else {
-					conditionsMet = false;
-				}
-			}
-			if (modifier->condOp == "and") {
-				logger::trace("The comparative operator was 'and'");
-				auto boolIt = std::find(bools.begin(), bools.end(), false);
-
-				if (boolIt != bools.end()) {
-					conditionsMet = false;
-				} else {
-					conditionsMet = true;
-				}
-			}
 			if (conditionsMet) {
 				auto mult = function::evaluateExpression(modifier->function.function, function::AssignVariables(modifier->function.variables, caster));
 
@@ -446,33 +272,8 @@ namespace Magnitude
 	{
 		logger::debug("Going through {} duration multipliers", dMultipliers.size());
 		for (Multiplier* multiplier : dMultipliers) {
-			std::vector<bool> bools = {};
-			bool conditionsMet = false;
-			for (Condition condition : multiplier->conditions) {
-				auto tempBool = EvaluateCondition(condition, caster);
-				logger::trace("Individual condition check was {}", tempBool);
-				bools.push_back(tempBool);
-			}
-			if (multiplier->condOp == "or") {
-				logger::trace("The comparative operator was 'or'");
-				auto boolIt = std::find(bools.begin(), bools.end(), true);
+			const bool conditionsMet = Conditions::EvaluateConditionsList(multiplier, caster);
 
-				if (boolIt != bools.end()) {
-					conditionsMet = true;
-				} else {
-					conditionsMet = false;
-				}
-			}
-			if (multiplier->condOp == "and") {
-				logger::trace("The comparative operator was 'and'");
-				auto boolIt = std::find(bools.begin(), bools.end(), false);
-
-				if (boolIt != bools.end()) {
-					conditionsMet = false;
-				} else {
-					conditionsMet = true;
-				}
-			}
 			if (conditionsMet) {
 				auto& currentCast = Cast::GetCastInstance(caster);
 
@@ -489,33 +290,8 @@ namespace Magnitude
 
 		logger::debug("Going through {} duration function multipliers", dMultipliersF.size());
 		for (MultiplierF* multiplier : dMultipliersF) {
-			std::vector<bool> bools = {};
-			bool conditionsMet = false;
-			for (Condition condition : multiplier->conditions) {
-				auto tempBool = EvaluateCondition(condition, caster);
-				logger::trace("Individual condition check was {}", tempBool);
-				bools.push_back(tempBool);
-			}
-			if (multiplier->condOp == "or") {
-				logger::trace("The comparative operator was 'or'");
-				auto boolIt = std::find(bools.begin(), bools.end(), true);
+			const bool conditionsMet = Conditions::EvaluateConditionsList(multiplier, caster);
 
-				if (boolIt != bools.end()) {
-					conditionsMet = true;
-				} else {
-					conditionsMet = false;
-				}
-			}
-			if (multiplier->condOp == "and") {
-				logger::trace("The comparative operator was 'and'");
-				auto boolIt = std::find(bools.begin(), bools.end(), false);
-
-				if (boolIt != bools.end()) {
-					conditionsMet = false;
-				} else {
-					conditionsMet = true;
-				}
-			}
 			if (conditionsMet) {
 				auto mult = function::evaluateExpression(multiplier->function.function, function::AssignVariables(multiplier->function.variables, caster));
 
@@ -537,33 +313,8 @@ namespace Magnitude
 	{
 		logger::debug("Going through {} duration overrides", dOverrides.size());
 		for (auto override : dOverrides) {
-			std::vector<bool> bools = {};
-			bool conditionsMet = false;
-			for (Condition condition : override->conditions) {
-				auto tempBool = EvaluateCondition(condition, caster);
-				logger::trace("Individual condition check was {}", tempBool);
-				bools.push_back(tempBool);
-			}
-			if (override->condOp == "or") {
-				logger::trace("The comparative operator was 'or'");
-				auto boolIt = std::find(bools.begin(), bools.end(), true);
+			const bool conditionsMet = Conditions::EvaluateConditionsList(override, caster);
 
-				if (boolIt != bools.end()) {
-					conditionsMet = true;
-				} else {
-					conditionsMet = false;
-				}
-			}
-			if (override->condOp == "and") {
-				logger::trace("The comparative operator was 'and'");
-				auto boolIt = std::find(bools.begin(), bools.end(), false);
-
-				if (boolIt != bools.end()) {
-					conditionsMet = false;
-				} else {
-					conditionsMet = true;
-				}
-			}
 			if (conditionsMet) {
 				auto& currentCast = Cast::GetCastInstance(caster);
 

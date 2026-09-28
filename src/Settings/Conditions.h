@@ -228,4 +228,54 @@ namespace Conditions
 
 	bool EvaluateCondition(const Condition& condition, RE::MagicCaster* caster);
 	
+	template <typename T>
+	bool EvaluateConditionsList(const T* modifier, RE::MagicCaster* caster)
+	{
+		bool conditionsMet = true;
+
+		if (!modifier) {
+			logger::warn("Attempted to evaluate conditions on a null modifier");
+			return false;
+		}
+
+		if (!caster) {
+			logger::warn("Attempted to evaluate conditions on a null caster");
+			return false;
+		}
+
+		if (modifier->condOp == "or") {
+			logger::trace("The comparative operator was 'or'");
+
+			conditionsMet = false;
+
+			for (const Condition& condition : modifier->conditions) {
+				const bool tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
+
+				if (tempBool) {
+					conditionsMet = true;
+					break;
+				}
+			}
+		} else if (modifier->condOp == "and") {
+			logger::trace("The comparative operator was 'and'");
+
+			conditionsMet = true;
+
+			for (const Condition& condition : modifier->conditions) {
+				const bool tempBool = EvaluateCondition(condition, caster);
+				logger::trace("Individual condition check was {}", tempBool);
+
+				if (!tempBool) {
+					conditionsMet = false;
+					break;
+				}
+			}
+		} else {
+			logger::warn("Unknown comparative operator '{}'", modifier->condOp);
+			conditionsMet = false;
+		}
+
+		return conditionsMet;
+	}
 }

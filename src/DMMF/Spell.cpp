@@ -24,33 +24,8 @@ namespace Spell
 
 		logger::debug("Going through {} replacement spells", Replacements.size());
 		for (auto replacement : Replacements) {
-			std::vector<bool> bools = {};
-			bool conditionsMet = false;
-			for (Condition condition : replacement->conditions) {
-				auto tempBool = EvaluateCondition(condition, caster);
-				logger::trace("Individual condition check was {}", tempBool);
-				bools.push_back(tempBool);
-			}
-			if (replacement->condOp == "or") {
-				logger::trace("The comparative operator was 'or'");
-				auto boolIt = std::find(bools.begin(), bools.end(), true);
+			const bool conditionsMet = Conditions::EvaluateConditionsList(replacement, caster);
 
-				if (boolIt != bools.end()) {
-					conditionsMet = true;
-				} else {
-					conditionsMet = false;
-				}
-			}
-			if (replacement->condOp == "and") {
-				logger::trace("The comparative operator was 'and'");
-				auto boolIt = std::find(bools.begin(), bools.end(), false);
-
-				if (boolIt != bools.end()) {
-					conditionsMet = false;
-				} else {
-					conditionsMet = true;
-				}
-			}
 			if (conditionsMet) {
 				auto& currentCast = Cast::GetCastInstance(caster);
 
